@@ -92,6 +92,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         for pane in Pane.allCases {
             let host = NSHostingController(rootView: pane.view)
             host.sizingOptions = [.preferredContentSize]
+            host.title = pane.title
             let item = NSTabViewItem(viewController: host)
             item.label = pane.title
             item.image = NSImage(systemSymbolName: pane.symbol, accessibilityDescription: pane.title)
@@ -130,12 +131,32 @@ struct SliderRow: View {
             HStack(spacing: 8) {
                 Slider(value: Binding(get: { value }, set: { value = ($0 / step).rounded() * step }), in: range)
                     .frame(width: 170)
+                    .accessibilityLabel(Text(title))
+                    .accessibilityValue(Text("\(Int(value.rounded()))\(unit)"))
                 Text("\(Int(value.rounded()))\(unit)")
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .frame(width: 44, alignment: .trailing)
             }
         }
+    }
+}
+
+/// A toggle whose switch carries its own accessibility label. In grouped forms SwiftUI
+/// draws the title as a separate row label that isn't linked to the switch, which leaves
+/// VoiceOver announcing an unnamed checkbox.
+struct LabeledToggle: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    init(_ title: String, isOn: Binding<Bool>) {
+        self.title = title
+        _isOn = isOn
+    }
+
+    var body: some View {
+        Toggle(title, isOn: $isOn)
+            .accessibilityLabel(Text(title))
     }
 }
 
@@ -165,14 +186,14 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Launch at login", isOn: $launchAtLogin)
+                LabeledToggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in
                         LoginItem.set(enabled)
                         launchAtLogin = LoginItem.isEnabled
                     }
-                Toggle("Always open on hover", isOn: $s.alwaysOpenOnHover)
+                LabeledToggle("Always open on hover", isOn: $s.alwaysOpenOnHover)
                 Caption("When off, hovering wakes the notch up and a click opens it.")
-                Toggle("Disable haptics", isOn: $s.disableHaptics)
+                LabeledToggle("Disable haptics", isOn: $s.disableHaptics)
             }
 
             Section("Notch") {
@@ -181,29 +202,29 @@ struct GeneralSettingsView: View {
                 Caption(detectedWidth > 0
                     ? "Cranny measures your notch automatically (detected: \(detectedWidth)pt). If the black shape looks a bit off, fine-tune it until it matches your notch exactly."
                     : "No notch detected on the connected screens.")
-                Toggle("Translucent notch background (experimental)", isOn: $s.translucent)
-                Toggle("Demo mode", isOn: $s.demoMode)
+                LabeledToggle("Translucent notch background (experimental)", isOn: $s.translucent)
+                LabeledToggle("Demo mode", isOn: $s.demoMode)
                 Caption("Keeps the notch drawn while idle. Useful for screen recordings (no effect on screens without a notch).")
             }
 
             Section("Screens without a notch") {
-                Toggle("Show on screens without a notch", isOn: $s.enableOnNonNotchScreens)
+                LabeledToggle("Show on screens without a notch", isOn: $s.enableOnNonNotchScreens)
                 Caption("On a Mac without a notch, Cranny always shows the handle on the main screen.")
                 SliderRow(title: "Handle width", value: $s.handleWidth, range: 80...320, step: 2, unit: "pt")
                     .disabled(!s.enableOnNonNotchScreens)
                 SliderRow(title: "Handle height", value: $s.handleHeight, range: 4...24, unit: "pt")
                     .disabled(!s.enableOnNonNotchScreens)
-                Toggle("Transparent handle", isOn: $s.transparentHandle)
+                LabeledToggle("Transparent handle", isOn: $s.transparentHandle)
                     .disabled(!s.enableOnNonNotchScreens)
             }
 
             Section("Gestures") {
-                Toggle("Allow gestures when hovering the notch", isOn: $s.allowGestures)
-                Toggle("Open/close the notch with vertical swipes", isOn: $s.gestureControlOpenState)
+                LabeledToggle("Allow gestures when hovering the notch", isOn: $s.allowGestures)
+                LabeledToggle("Open/close the notch with vertical swipes", isOn: $s.gestureControlOpenState)
                     .disabled(!s.allowGestures)
-                Toggle("Control media with horizontal swipes", isOn: $s.gestureControlMedia)
+                LabeledToggle("Control media with horizontal swipes", isOn: $s.gestureControlMedia)
                     .disabled(!s.allowGestures)
-                Toggle("Invert media gesture actions", isOn: $s.invertMediaGestures)
+                LabeledToggle("Invert media gesture actions", isOn: $s.invertMediaGestures)
                     .disabled(!s.allowGestures || !s.gestureControlMedia)
                 Caption("When on, a left swipe plays the next song; when off, it goes back to the previous one.")
             }
@@ -236,15 +257,19 @@ struct NookSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Enable nook", isOn: $s.nookEnabled)
+                LabeledToggle("Enable nook", isOn: $s.nookEnabled)
                 Caption("If disabled, clicking the notch won't do anything. Dragging files onto it still opens the tray.")
             }
 
             Section("Size") {
                 Stepper("Width: \(s.nookWidthCells) cells", value: $s.nookWidthCells, in: 9...16)
+                    .accessibilityLabel(Text("Nook width"))
+                    .accessibilityValue(Text("\(s.nookWidthCells) cells"))
                 Stepper("Height: \(s.nookHeightCells) cells", value: $s.nookHeightCells, in: 2...3)
+                    .accessibilityLabel(Text("Nook height"))
+                    .accessibilityValue(Text("\(s.nookHeightCells) cells"))
                 Caption("Widget sizes are measured in grid cells. 1 cell is \(Int(AppSettings.cellSize))pt.")
-                Toggle("Show dividers between widgets", isOn: $s.showDividers)
+                LabeledToggle("Show dividers between widgets", isOn: $s.showDividers)
                 SliderRow(title: "Padding around widgets", value: $s.widgetsPadding, range: 4...24, unit: "pt")
             }
 
@@ -298,11 +323,12 @@ struct WidgetSettingsRow: View {
             Spacer()
             if kind != .mirror {
                 Stepper(
-                    "Width",
+                    "\(kind.title) width",
                     value: Binding(get: { s.widthCells(for: kind) }, set: { s.setWidthCells($0, for: kind) }),
                     in: s.widthRange(for: kind)
                 )
                 .labelsHidden()
+                .accessibilityValue(Text("\(s.widthCells(for: kind)) cells"))
             }
             Button { move(by: -1) } label: { Image(systemName: "chevron.up") }
                 .disabled(index == 0)
@@ -334,11 +360,11 @@ struct LiveActivitiesSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Enable live activities", isOn: $s.liveActivitiesEnabled)
+                LabeledToggle("Enable live activities", isOn: $s.liveActivitiesEnabled)
                 Group {
-                    Toggle("Enable Quick Peek", isOn: $s.enableQuickPeek)
+                    LabeledToggle("Enable Quick Peek", isOn: $s.enableQuickPeek)
                     Caption("Hover a live activity to take a quick peek at its details.")
-                    Toggle("Enable interactive activities", isOn: $s.interactiveActivities)
+                    LabeledToggle("Enable interactive activities", isOn: $s.interactiveActivities)
                     Caption("Clicking an activity acts on it (play/pause, join a meeting) instead of opening the nook.")
                     SliderRow(title: "Inactivity timeout", value: $s.inactivityTimeout, range: 0...60, unit: "s")
                     Caption("How long an activity sticks around after it becomes inactive, like when music pauses.")
@@ -354,6 +380,7 @@ struct LiveActivitiesSettingsView: View {
                     )) {
                         Label(kind.title, systemImage: kind.symbol)
                     }
+                    .accessibilityLabel(Text(kind.title))
                 }
             }
             .disabled(!s.liveActivitiesEnabled)
@@ -362,8 +389,9 @@ struct LiveActivitiesSettingsView: View {
                 Picker("Effect", selection: $s.mediaEffect) {
                     ForEach(MediaEffect.allCases) { Text($0.title).tag($0) }
                 }
+                .accessibilityLabel(Text("Effect"))
                 if s.mediaEffect == .audioSpectrograph {
-                    Toggle("Colored spectrograph", isOn: $s.coloredSpectrograph)
+                    LabeledToggle("Colored spectrograph", isOn: $s.coloredSpectrograph)
                     Caption("Tints the spectrograph with the colour of the current album art; otherwise it's white.")
                 }
                 if s.mediaEffect == .gif {
@@ -381,10 +409,12 @@ struct LiveActivitiesSettingsView: View {
 
             Section("Calendar") {
                 Stepper("Show up \(s.calendarMinutesBefore) minutes before an event", value: $s.calendarMinutesBefore, in: 1...120)
-                Toggle("Show while in events", isOn: $s.calendarShowWhileInEvent)
-                Toggle("Show time lapsed while in events", isOn: $s.calendarShowTimeLapsed)
+                    .accessibilityLabel(Text("Minutes before an event"))
+                    .accessibilityValue(Text("\(s.calendarMinutesBefore) minutes"))
+                LabeledToggle("Show while in events", isOn: $s.calendarShowWhileInEvent)
+                LabeledToggle("Show time lapsed while in events", isOn: $s.calendarShowTimeLapsed)
                     .disabled(!s.calendarShowWhileInEvent)
-                Toggle("Only events with a meeting link", isOn: $s.calendarOnlyMeetings)
+                LabeledToggle("Only events with a meeting link", isOn: $s.calendarOnlyMeetings)
             }
         }
         .formStyle(.grouped)
@@ -451,6 +481,7 @@ struct CalendarSettingsView: View {
                                     Text(item.title)
                                 }
                             }
+                            .accessibilityLabel(Text(item.title))
                         }
                     }
                 }
@@ -486,7 +517,11 @@ struct ShortcutsSettingsView: View {
         Form {
             Section("Widget") {
                 Stepper("Width: \(s.shortcutsWidthCells) cells", value: $s.shortcutsWidthCells, in: 2...8)
+                    .accessibilityLabel(Text("Shortcuts widget width"))
+                    .accessibilityValue(Text("\(s.shortcutsWidthCells) cells"))
                 Stepper("Columns: \(s.shortcutColumns)", value: $s.shortcutColumns, in: 1...4)
+                    .accessibilityLabel(Text("Shortcut columns"))
+                    .accessibilityValue(Text("\(s.shortcutColumns)"))
                 Caption("Each column holds \(s.nookHeightCells) shortcuts. Add the Shortcuts widget in the Nook tab.")
             }
             Section {
@@ -499,7 +534,7 @@ struct ShortcutsSettingsView: View {
                     }
                 }
                 ForEach(shortcuts.all, id: \.self) { name in
-                    Toggle(name, isOn: binding(for: name))
+                    LabeledToggle(name, isOn: binding(for: name))
                 }
             } header: {
                 HStack {
@@ -624,7 +659,7 @@ struct WelcomeView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Toggle("Launch Cranny at login", isOn: $launchAtLogin)
+            LabeledToggle("Launch Cranny at login", isOn: $launchAtLogin)
             Button {
                 onStart(launchAtLogin)
             } label: {
