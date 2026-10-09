@@ -1,7 +1,8 @@
 #!/bin/zsh
-# Builds Cranny.app, signs it ad hoc and (with --install) copies it to /Applications.
-#   ./build.sh            build into ./build/Cranny.app
-#   ./build.sh --install  build, install to /Applications and relaunch
+# Builds Cranny.app, signs it ad hoc and zips it.
+#   ./build.sh               build for this Mac into ./build/Cranny.app (+ build/Cranny.zip)
+#   ./build.sh --universal   build for both Apple silicon and Intel (used for releases)
+#   ./build.sh --install     also install to /Applications and relaunch
 set -euo pipefail
 
 cd "${0:A:h}"
@@ -9,16 +10,34 @@ APP_NAME="Cranny"
 BUILD_DIR="build"
 APP="$BUILD_DIR/$APP_NAME.app"
 INSTALL_DIR="/Applications"
-ARCH="$(uname -m)"
 
-echo "› Compiling app"
-swift build -c release --arch "$ARCH" 2>&1 | grep -E "error|warning: unre|Compiling|Build" || true
-BIN="$(swift build -c release --arch "$ARCH" --show-bin-path)/$APP_NAME"
-[[ -x "$BIN" ]] || { echo "Build failed"; exit 1; }
+INSTALL=false
+ARCHS=("$(uname -m)")
+for arg in "$@"; do
+  case "$arg" in
+    --install) INSTALL=true ;;
+    --universal) ARCHS=(arm64 x86_64) ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
+  esac
+done
+ARCH_FLAGS=()
+for a in "${ARCHS[@]}"; do ARCH_FLAGS+=(-arch "$a"); done
+
+BINS=()
+for a in "${ARCHS[@]}"; do
+  echo "› Compiling app ($a)"
+  swift build -c release --arch "$a" 2>&1 | grep -E "error|warning: unre|Build" || true
+  BIN="$(swift build -c release --arch "$a" --show-bin-path)/$APP_NAME"
+  [[ -x "$BIN" ]] || { echo "Build failed for $a"; exit 1; }
+  # Newer SwiftPM versions reuse one output folder for every architecture, so keep a copy.
+  mkdir -p "$BUILD_DIR/bin-$a"
+  cp "$BIN" "$BUILD_DIR/bin-$a/$APP_NAME"
+  BINS+=("$BUILD_DIR/bin-$a/$APP_NAME")
+done
 
 echo "› Compiling media helper"
 mkdir -p "$BUILD_DIR/helper"
-clang -dynamiclib -fobjc-arc -O2 -arch "$ARCH" -mmacosx-version-min=14.0 \
+clang -dynamiclib -fobjc-arc -O2 "${ARCH_FLAGS[@]}" -mmacosx-version-min=14.0 \
   -framework Foundation Helper/MediaHelper.m -o "$BUILD_DIR/helper/MediaHelper.dylib"
 
 if [[ ! -f "$BUILD_DIR/AppIcon.icns" || Tools/make-icon.swift -nt "$BUILD_DIR/AppIcon.icns" ]]; then
@@ -33,10 +52,10 @@ if [[ ! -f "$BUILD_DIR/AppIcon.icns" || Tools/make-icon.swift -nt "$BUILD_DIR/Ap
   iconutil -c icns "$ICONSET" -o "$BUILD_DIR/AppIcon.icns"
 fi
 
-echo "› Assembling $APP"
+echo "› Assembling $APP (${ARCHS[*]})"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
-cp "$BIN" "$APP/Contents/MacOS/$APP_NAME"
+lipo -create "${BINS[@]}" -output "$APP/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 printf "APPL????" > "$APP/Contents/PkgInfo"
 cp "$BUILD_DIR/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
@@ -52,7 +71,7 @@ echo "› Zipping"
 rm -f "$BUILD_DIR/$APP_NAME.zip"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$BUILD_DIR/$APP_NAME.zip"
 
-if [[ "${1:-}" == "--install" ]]; then
+if $INSTALL; then
   echo "› Installing to $INSTALL_DIR"
   pkill -x "$APP_NAME" 2>/dev/null && sleep 1 || true
   rm -rf "$INSTALL_DIR/$APP_NAME.app"

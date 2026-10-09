@@ -34,6 +34,9 @@ struct NotchLayout: Equatable {
 final class NotchModel: ObservableObject {
     let hasPhysicalNotch: Bool
     let physicalNotch: CGSize
+    /// Horizontal centre of the notch (or handle) in screen coordinates.
+    let notchMidX: CGFloat
+    private let menuBarHeight: CGFloat
 
     @Published var state: NotchState = .closed
     @Published var tab: NotchTab = .nook
@@ -54,8 +57,11 @@ final class NotchModel: ObservableObject {
     weak var controller: NotchController?
 
     init(screen: NSScreen) {
-        hasPhysicalNotch = screen.hasNotch
-        physicalNotch = screen.notchSize
+        let geometry = screen.notchGeometry
+        hasPhysicalNotch = geometry.hasNotch
+        physicalNotch = geometry.size
+        notchMidX = geometry.midX
+        menuBarHeight = screen.menuBarHeight
     }
 
     private var settings: AppSettings { AppSettings.shared }
@@ -68,8 +74,9 @@ final class NotchModel: ObservableObject {
         return CGSize(width: settings.handleWidth, height: settings.handleHeight)
     }
 
-    /// Height of the band that holds live activities and the open header.
-    var barHeight: CGFloat { hasPhysicalNotch ? physicalNotch.height : 30 }
+    /// Height of the band that holds live activities and the open header: the notch on
+    /// notched screens, otherwise the menu bar (with a floor so artwork stays legible).
+    var barHeight: CGFloat { hasPhysicalNotch ? physicalNotch.height : max(26, min(menuBarHeight, 40)) }
     var sideWidth: CGFloat { barHeight + 6 }
     var activityBodyWidth: CGFloat { closedSize.width + 2 * sideWidth }
 

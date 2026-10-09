@@ -43,7 +43,7 @@ static void emit(NSDictionary *payload) {
     fflush(stdout);
 }
 
-static double finite(id value) {
+static double finiteDouble(id value) {
     if (![value isKindOfClass:[NSNumber class]]) return 0;
     double d = [value doubleValue];
     return isfinite(d) ? d : 0;
@@ -62,9 +62,9 @@ static void publish(NSDictionary *info, BOOL playing, NSString *bundleID, NSStri
         p[@"title"] = string(info[@"kMRMediaRemoteNowPlayingInfoTitle"]);
         p[@"artist"] = string(info[@"kMRMediaRemoteNowPlayingInfoArtist"]);
         p[@"album"] = string(info[@"kMRMediaRemoteNowPlayingInfoAlbum"]);
-        p[@"duration"] = @(finite(info[@"kMRMediaRemoteNowPlayingInfoDuration"]));
-        p[@"elapsed"] = @(finite(info[@"kMRMediaRemoteNowPlayingInfoElapsedTime"]));
-        p[@"rate"] = @(finite(info[@"kMRMediaRemoteNowPlayingInfoPlaybackRate"]));
+        p[@"duration"] = @(finiteDouble(info[@"kMRMediaRemoteNowPlayingInfoDuration"]));
+        p[@"elapsed"] = @(finiteDouble(info[@"kMRMediaRemoteNowPlayingInfoElapsedTime"]));
+        p[@"rate"] = @(finiteDouble(info[@"kMRMediaRemoteNowPlayingInfoPlaybackRate"]));
         id ts = info[@"kMRMediaRemoteNowPlayingInfoTimestamp"];
         if ([ts isKindOfClass:[NSDate class]]) p[@"timestamp"] = @([(NSDate *)ts timeIntervalSince1970]);
         p[@"bundleID"] = bundleID ?: @"";

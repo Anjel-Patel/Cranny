@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: macOS ${{ matrix.macos }}
+    runs-on: macos-${{ matrix.macos }}
+    strategy:
+      fail-fast: false
+      matrix:
+        macos: [14, 15]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build for Apple silicon and Intel
+        run: ./build.sh --universal
+
+      - name: Check the app bundle
+        run: |
+          codesign --verify --strict build/Cranny.app
+          for file in build/Cranny.app/Contents/MacOS/Cranny build/Cranny.app/Contents/Frameworks/MediaHelper.dylib; do
+            archs="$(lipo -archs "$file")"
+            echo "$file: $archs"
+            [[ "$archs" == *arm64* && "$archs" == *x86_64* ]]
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cranny-macos-${{ matrix.macos }}
+          path: build/Cranny.zip

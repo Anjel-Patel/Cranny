@@ -159,7 +159,7 @@ struct GeneralSettingsView: View {
     @ViewState private var confirmReset = false
 
     private var detectedWidth: Int {
-        Int(NSScreen.screens.first(where: \.hasNotch)?.notchSize.width ?? 0)
+        Int(NSScreen.screens.lazy.map(\.notchGeometry).first(where: \.hasNotch)?.size.width ?? 0)
     }
 
     var body: some View {
@@ -188,6 +188,7 @@ struct GeneralSettingsView: View {
 
             Section("Screens without a notch") {
                 Toggle("Show on screens without a notch", isOn: $s.enableOnNonNotchScreens)
+                Caption("On a Mac without a notch, Cranny always shows the handle on the main screen.")
                 SliderRow(title: "Handle width", value: $s.handleWidth, range: 80...320, step: 2, unit: "pt")
                     .disabled(!s.enableOnNonNotchScreens)
                 SliderRow(title: "Handle height", value: $s.handleHeight, range: 4...24, unit: "pt")

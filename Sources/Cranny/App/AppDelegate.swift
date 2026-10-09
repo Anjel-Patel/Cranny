@@ -53,8 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func rebuildControllers(force: Bool = false) {
         let showEverywhere = AppSettings.shared.enableOnNonNotchScreens
-        let screens = NSScreen.screens.filter { $0.hasNotch || showEverywhere }
-        let signature = screens.map { "\($0.displayID):\($0.frame):\($0.hasNotch)" }.joined(separator: "|")
+        var screens = NSScreen.screens.filter { $0.notchGeometry.hasNotch || showEverywhere }
+        // Macs without a notch (desktops, older or Intel MacBooks, a MacBook in clamshell mode)
+        // still get a handle on the main screen, so Cranny is never invisible.
+        if screens.isEmpty, let main = NSScreen.screens.first {
+            screens = [main]
+        }
+        let signature = screens.map { "\($0.displayID):\($0.frame):\($0.notchGeometry.hasNotch)" }.joined(separator: "|")
         guard force || signature != screenSignature else { return }
         screenSignature = signature
         NotchRegistry.controllers.forEach { $0.tearDown() }

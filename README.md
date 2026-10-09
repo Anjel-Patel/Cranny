@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Anjel-Patel/Cranny/actions/workflows/build.yml"><img src="https://github.com/Anjel-Patel/Cranny/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Anjel-Patel/Cranny/releases/latest"><b>Download</b></a> ·
   <a href="#install">Install</a> ·
   <a href="#build-from-source">Build from source</a>
@@ -30,8 +34,9 @@ lo.cafe or NotchNook.
   have it open on hover.
 - Haptic feedback, an optional translucent background, notch width fine-tuning, and a
   demo mode for screen recordings.
-- Screens without a notch can get a small handle at the top that works the same way.
-  Multiple displays are supported.
+- Macs without a notch get a small handle at the top of the main screen that works
+  the same way. External displays can show one too, and notch sizes and display
+  scaling are picked up automatically.
 
 ### Nook widgets
 
@@ -85,7 +90,7 @@ that don't fit are hidden.
 3. Open Cranny and hover over your notch. Settings are behind the gear in the open
    notch, or right-click the notch.
 
-Requires macOS 14 Sonoma or later. The download is built for Apple silicon Macs.
+Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 
 ## Permissions and privacy
 
@@ -107,8 +112,19 @@ cd Cranny
 ```
 
 `./build.sh` on its own leaves the app in `build/Cranny.app` and a zip next to it.
-Local builds are signed ad hoc, so macOS may ask for Calendar or Camera access again
-after you rebuild.
+Add `--universal` to build for both Apple silicon and Intel. Local builds are signed ad
+hoc, so macOS may ask for Calendar or Camera access again after you rebuild.
+
+### Trying other notch sizes
+
+You can make Cranny pretend your main screen has a different notch, or none at all,
+to check layouts for other Macs. Relaunch Cranny after changing it:
+
+```sh
+defaults write io.github.rdbms234.Cranny debugNotchSize 200x38   # width x height in points
+defaults write io.github.rdbms234.Cranny debugNotchSize none     # a Mac without a notch
+defaults delete io.github.rdbms234.Cranny debugNotchSize         # back to normal
+```
 
 ## How Now Playing works
 

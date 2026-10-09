@@ -28,6 +28,44 @@ extension NSScreen {
         let h = frame.maxY - visibleFrame.maxY
         return h > 0 ? h : 24
     }
+
+    var notchGeometry: NotchGeometry { NotchGeometry(screen: self) }
+}
+
+/// Where a screen's notch is. Developers can simulate other Macs on the main screen with
+/// `defaults write io.github.rdbms234.Cranny debugNotchSize 200x38`, or `none` for a Mac
+/// without a notch (relaunch Cranny afterwards).
+struct NotchGeometry {
+    let hasNotch: Bool
+    let size: CGSize
+    /// Horizontal centre of the notch in screen coordinates.
+    let midX: CGFloat
+
+    init(screen: NSScreen) {
+        var hasNotch = screen.hasNotch
+        var size = screen.notchSize
+        var midX = screen.frame.midX
+        if hasNotch, let left = screen.auxiliaryTopLeftArea, size.width > 0 {
+            midX = screen.frame.minX + left.width + size.width / 2
+        }
+        if screen == NSScreen.screens.first, let override = UserDefaults.standard.string(forKey: "debugNotchSize") {
+            if override.lowercased() == "none" {
+                hasNotch = false
+                size = .zero
+                midX = screen.frame.midX
+            } else {
+                let parts = override.lowercased().split(separator: "x").compactMap { Double($0) }
+                if parts.count == 2, (60...400).contains(parts[0]), (16...60).contains(parts[1]) {
+                    hasNotch = true
+                    size = CGSize(width: parts[0], height: parts[1])
+                    midX = screen.frame.midX
+                }
+            }
+        }
+        self.hasNotch = hasNotch
+        self.size = size
+        self.midX = midX
+    }
 }
 
 enum ImageTools {

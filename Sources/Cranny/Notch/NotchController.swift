@@ -58,14 +58,14 @@ final class NotchController {
         let maximum = model.maximumSize
         let width = min(screen.frame.width, maximum.width + 80)
         let height = min(screen.frame.height, maximum.height + 60)
-        let frame = NSRect(x: screen.frame.midX - width / 2, y: screen.frame.maxY - height, width: width, height: height)
+        let frame = NSRect(x: model.notchMidX - width / 2, y: screen.frame.maxY - height, width: width, height: height)
         if panel.frame != frame { panel.setFrame(frame, display: true) }
     }
 
     /// Current notch body (excluding the decorative ears) in screen coordinates.
     func notchRect() -> NSRect {
         let layout = model.layout(activity: LiveActivityCenter.shared.current)
-        return NSRect(x: screen.frame.midX - layout.bodyWidth / 2, y: screen.frame.maxY - layout.height,
+        return NSRect(x: model.notchMidX - layout.bodyWidth / 2, y: screen.frame.maxY - layout.height,
                       width: layout.bodyWidth, height: layout.height)
     }
 
@@ -83,7 +83,7 @@ final class NotchController {
         } else if LiveActivityCenter.shared.current == nil {
             // Only the camera housing (or handle) itself, so menu bar items beside it stay clickable.
             let closed = model.closedSize
-            zone = NSRect(x: screen.frame.midX - closed.width / 2, y: screen.frame.maxY - closed.height - 4,
+            zone = NSRect(x: model.notchMidX - closed.width / 2, y: screen.frame.maxY - closed.height - 4,
                           width: closed.width, height: closed.height + 10)
         } else {
             zone = NSRect(x: rect.minX, y: rect.minY - 4, width: rect.width, height: rect.height + 10)
