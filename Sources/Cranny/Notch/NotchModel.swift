@@ -47,6 +47,12 @@ final class NotchModel: ObservableObject {
     /// Opened by a command; stays open until the pointer has passed through it.
     @Published var pinned = false
     @Published var calendarDayOffset = 0
+    /// True for a moment after the notch stops being shown, so the black shape shrinks back
+    /// onto the physical notch at full opacity and only then disappears.
+    @Published private(set) var settling = false
+    /// Bundle identifier of the app showing fullscreen on this screen ("" if unknown), or nil.
+    @Published var fullscreenApp: String?
+    private var settleWork: DispatchWorkItem?
     /// Frames of interactive areas in the hosting view's (top-left origin) coordinates.
     var regions: [NotchRegion: CGRect] = [:]
 
@@ -95,8 +101,47 @@ final class NotchModel: ObservableObject {
             return peeking && settings.enableQuickPeek ? .peek : .activity
         }
         if hovering { return .hover }
-        if !hasPhysicalNotch || settings.demoMode { return .idle }
+        if !hasPhysicalNotch || settings.demoMode || settling { return .idle }
         return .hidden
+    }
+
+    /// Keeps the shape drawn while it shrinks back to the notch's size, then lets it hide.
+    func settle() {
+        settleWork?.cancel()
+        settling = true
+        let work = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated { self?.settling = false }
+        }
+        settleWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
+    }
+
+    // MARK: Fullscreen
+
+    /// The live activity this screen should show, after applying the fullscreen setting.
+    func visibleActivity(_ activity: LiveActivityKind?) -> LiveActivityKind? {
+        guard let activity, let app = fullscreenApp else { return activity }
+        switch settings.fullscreenBehavior {
+        case .showEverything:
+            return activity
+        case .hideWhileWatching:
+            return isPlayingMedia(app) ? nil : activity
+        case .hideLiveActivities, .hideEverything:
+            return nil
+        }
+    }
+
+    /// In fullscreen with "Hide Cranny entirely", the notch ignores the pointer completely.
+    var isDisabledForFullscreen: Bool {
+        fullscreenApp != nil && settings.fullscreenBehavior == .hideEverything
+    }
+
+    /// Whether the fullscreen app is the one playing media (YouTube in a browser, IINA, …).
+    private func isPlayingMedia(_ app: String) -> Bool {
+        let player = NowPlaying.shared
+        let source = player.bundleID
+        guard player.hasPlayer, !app.isEmpty, !source.isEmpty else { return false }
+        return app == source || app.hasPrefix(source + ".") || source.hasPrefix(app + ".")
     }
 
     func layout(activity: LiveActivityKind?) -> NotchLayout {

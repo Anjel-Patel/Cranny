@@ -207,6 +207,14 @@ struct GeneralSettingsView: View {
                 Caption("Keeps the notch drawn while idle. Useful for screen recordings (no effect on screens without a notch).")
             }
 
+            Section("Fullscreen") {
+                Picker("In fullscreen apps", selection: $s.fullscreenBehavior) {
+                    ForEach(FullscreenBehavior.allCases) { Text($0.title).tag($0) }
+                }
+                .accessibilityLabel(Text("In fullscreen apps"))
+                Caption("\"While watching video\" means the fullscreen app is the one playing media, like YouTube in your browser, IINA or Netflix. Music from another app still shows. \"Hide Cranny entirely\" also stops the notch from opening while an app is fullscreen.")
+            }
+
             Section("Screens without a notch") {
                 LabeledToggle("Show on screens without a notch", isOn: $s.enableOnNonNotchScreens)
                 Caption("On a Mac without a notch, Cranny always shows the handle on the main screen.")

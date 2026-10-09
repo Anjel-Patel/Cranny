@@ -5,10 +5,12 @@ struct NotchRootView: View {
     @ObservedObject var model: NotchModel
     @EnvironmentObject var live: LiveActivityCenter
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var player: NowPlaying
 
     var body: some View {
+        let activity = model.visibleActivity(live.current)
         VStack(spacing: 0) {
-            NotchContainer(model: model, layout: model.layout(activity: live.current))
+            NotchContainer(model: model, layout: model.layout(activity: activity), activity: activity)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -19,8 +21,8 @@ struct NotchRootView: View {
 struct NotchContainer: View {
     @ObservedObject var model: NotchModel
     let layout: NotchLayout
+    let activity: LiveActivityKind?
     @EnvironmentObject var settings: AppSettings
-    @EnvironmentObject var live: LiveActivityCenter
 
     private var shape: NotchShape { NotchShape(top: layout.top, bottom: layout.bottom) }
 
@@ -33,7 +35,6 @@ struct NotchContainer: View {
         .clipShape(shape)
         .contentShape(shape)
         .shadow(color: .black.opacity(layout.appearance == .open ? 0.45 : 0), radius: 12, y: 6)
-        .opacity(layout.appearance == .hidden ? 0 : 1)
         .onTapGesture(perform: tapped)
         .contextMenu {
             Button("Open Settings") { SettingsWindowController.shared.show() }
@@ -42,6 +43,10 @@ struct NotchContainer: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: layout)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.tab)
+        // Deliberately outside the animations above: the shape appears at full opacity at the
+        // physical notch's exact size and grows from there, and only disappears after it has
+        // shrunk back onto the notch, so it never shows as a translucent ghost.
+        .opacity(layout.appearance == .hidden ? 0 : 1)
     }
 
     @ViewBuilder private var background: some View {
@@ -80,7 +85,7 @@ struct NotchContainer: View {
 
     private func tapped() {
         guard model.state == .closed else { return }
-        if live.current == .tray {
+        if activity == .tray {
             model.open(tab: .tray)
         } else if settings.nookEnabled {
             model.open(tab: .nook)

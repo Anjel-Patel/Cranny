@@ -71,6 +71,9 @@ that don't fit are hidden.
 - Album art plus an audio visualizer tinted with the album's colours, a countdown to
   your next meeting, or the number of files in the tray.
 - Hover for a Quick Peek. Click to play/pause or join a meeting.
+- Fullscreen video stays distraction-free: by default, live activities hide while the
+  fullscreen app is the one playing media. You can instead hide them in every fullscreen
+  app, hide Cranny entirely, or always show everything.
 - Two-finger swipes over the notch: down or up to open or close it, left or right to
   change tracks.
 

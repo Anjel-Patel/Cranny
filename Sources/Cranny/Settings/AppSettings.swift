@@ -61,6 +61,21 @@ enum MediaEffect: String, CaseIterable, Identifiable {
     }
 }
 
+enum FullscreenBehavior: String, CaseIterable, Identifiable {
+    case showEverything, hideWhileWatching, hideLiveActivities, hideEverything
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .showEverything: return "Show everything"
+        case .hideWhileWatching: return "Hide live activities while watching video"
+        case .hideLiveActivities: return "Hide live activities"
+        case .hideEverything: return "Hide Cranny entirely"
+        }
+    }
+}
+
 /// Every user-facing option. Values persist to UserDefaults as soon as they change.
 @MainActor
 final class AppSettings: ObservableObject {
@@ -83,6 +98,9 @@ final class AppSettings: ObservableObject {
     @Published var handleHeight: Double = 8 { didSet { put("handleHeight", handleHeight) } }
     @Published var transparentHandle = false { didSet { put("transparentHandle", transparentHandle) } }
     @Published var demoMode = false { didSet { put("demoMode", demoMode) } }
+    @Published var fullscreenBehavior: FullscreenBehavior = .hideWhileWatching {
+        didSet { put("fullscreenBehavior", fullscreenBehavior.rawValue) }
+    }
 
     // MARK: Gestures
     @Published var allowGestures = true { didSet { put("allowGestures", allowGestures) } }
@@ -161,6 +179,7 @@ final class AppSettings: ObservableObject {
         handleHeight = read("handleHeight", handleHeight)
         transparentHandle = read("transparentHandle", transparentHandle)
         demoMode = read("demoMode", demoMode)
+        fullscreenBehavior = FullscreenBehavior(rawValue: read("fullscreenBehavior", fullscreenBehavior.rawValue)) ?? .hideWhileWatching
 
         allowGestures = read("allowGestures", allowGestures)
         gestureControlOpenState = read("gestureControlOpenState", gestureControlOpenState)
@@ -215,6 +234,7 @@ final class AppSettings: ObservableObject {
         handleHeight = d.handleHeight
         transparentHandle = d.transparentHandle
         demoMode = d.demoMode
+        fullscreenBehavior = d.fullscreenBehavior
         allowGestures = d.allowGestures
         gestureControlOpenState = d.gestureControlOpenState
         gestureControlMedia = d.gestureControlMedia

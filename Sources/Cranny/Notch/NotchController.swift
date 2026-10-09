@@ -15,6 +15,11 @@ final class NotchController {
     private var peekTask: DispatchWorkItem?
     private var closeTask: DispatchWorkItem?
     private let swipe = SwipeTracker()
+    private var fullscreenTimer: Timer?
+    private var workspaceObservers: [NSObjectProtocol] = []
+
+    /// The live activity this screen shows right now (after the fullscreen setting).
+    private var activity: LiveActivityKind? { model.visibleActivity(LiveActivityCenter.shared.current) }
 
     init(screen: NSScreen) {
         self.screen = screen
@@ -45,10 +50,20 @@ final class NotchController {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.refreshPointer() }
             .store(in: &bag)
+        // @Published delivers this before the value changes, so the shape is kept on screen
+        // in the same frame the activity ends and can shrink back onto the notch.
+        LiveActivityCenter.shared.$current
+            .sink { [weak self] next in
+                if next == nil, LiveActivityCenter.shared.current != nil { self?.model.settle() }
+            }
+            .store(in: &bag)
+        startFullscreenMonitoring()
     }
 
     func tearDown() {
         openTask?.cancel(); peekTask?.cancel(); closeTask?.cancel()
+        fullscreenTimer?.invalidate()
+        workspaceObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
         bag.removeAll()
         panel.orderOut(nil)
         panel.close()
@@ -64,7 +79,7 @@ final class NotchController {
 
     /// Current notch body (excluding the decorative ears) in screen coordinates.
     func notchRect() -> NSRect {
-        let layout = model.layout(activity: LiveActivityCenter.shared.current)
+        let layout = model.layout(activity: activity)
         return NSRect(x: model.notchMidX - layout.bodyWidth / 2, y: screen.frame.maxY - layout.height,
                       width: layout.bodyWidth, height: layout.height)
     }
@@ -74,13 +89,19 @@ final class NotchController {
     // MARK: Pointer
 
     func pointerMoved(_ point: NSPoint, draggingContent: Bool) {
+        if model.isDisabledForFullscreen && !model.pinned {
+            if !panel.ignoresMouseEvents { panel.ignoresMouseEvents = true }
+            if model.state == .open { close() }
+            setHovering(false)
+            return
+        }
         let rect = notchRect()
         let zone: NSRect
         if model.state == .open {
             zone = NSRect(x: rect.minX - 4, y: rect.minY - 6, width: rect.width + 8, height: rect.height + 12)
         } else if draggingContent {
             zone = NSRect(x: rect.minX - 50, y: rect.minY - 30, width: rect.width + 100, height: rect.height + 40)
-        } else if LiveActivityCenter.shared.current == nil {
+        } else if activity == nil {
             // Only the camera housing (or handle) itself, so menu bar items beside it stay clickable.
             let closed = model.closedSize
             zone = NSRect(x: model.notchMidX - closed.width / 2, y: screen.frame.maxY - closed.height - 4,
@@ -108,6 +129,30 @@ final class NotchController {
         }
     }
 
+    private func startFullscreenMonitoring() {
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.activeSpaceDidChangeNotification, NSWorkspace.didActivateApplicationNotification] {
+            workspaceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refreshFullscreen() }
+            })
+        }
+        let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshFullscreen() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        fullscreenTimer = timer
+        refreshFullscreen()
+    }
+
+    func refreshFullscreen() {
+        let app = FullscreenDetector.fullscreenApp(on: screen)
+        guard app != model.fullscreenApp else { return }
+        Log.app.notice("Fullscreen on display \(self.displayID): \(app ?? "none", privacy: .public)")
+        if activity != nil { model.settle() }
+        model.fullscreenApp = app
+        refreshPointer()
+    }
+
     func refreshPointer() {
         pointerMoved(MouseTracker.shared.pointerLocation, draggingContent: MouseTracker.shared.isDraggingContent)
     }
@@ -120,15 +165,16 @@ final class NotchController {
 
     private func setHovering(_ inside: Bool) {
         guard inside != model.hovering else { return }
+        if !inside { model.settle() }
         model.hovering = inside
         openTask?.cancel(); openTask = nil
         peekTask?.cancel(); peekTask = nil
         if inside {
             Haptics.tap()
             let settings = AppSettings.shared
-            if settings.alwaysOpenOnHover && (settings.nookEnabled || LiveActivityCenter.shared.current == .tray) {
+            if settings.alwaysOpenOnHover && (settings.nookEnabled || activity == .tray) {
                 openTask = after(0.12) { [weak self] in self?.open(tab: nil) }
-            } else if LiveActivityCenter.shared.current != nil, settings.enableQuickPeek {
+            } else if activity != nil, settings.enableQuickPeek {
                 peekTask = after(0.3) { [weak self] in self?.model.peeking = true }
             }
         } else if model.peeking {
@@ -146,7 +192,7 @@ final class NotchController {
         if let tab {
             model.tab = tab
         } else {
-            model.tab = LiveActivityCenter.shared.current == .tray ? .tray : .nook
+            model.tab = activity == .tray ? .tray : .nook
         }
         if model.tab == .nook && !settings.nookEnabled { model.tab = .tray }
         model.dragActive = viaDrag
@@ -165,6 +211,7 @@ final class NotchController {
         peekTask?.cancel(); peekTask = nil
         cancelClose()
         guard model.state == .open else { return }
+        model.settle()
         model.state = .closed
         model.dragActive = false
         model.pinned = false
