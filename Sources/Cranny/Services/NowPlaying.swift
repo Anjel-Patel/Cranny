@@ -19,6 +19,7 @@ final class NowPlaying: ObservableObject {
     @Published private(set) var appName = ""
     /// When playback last stopped; nil while playing or when nothing has played since launch.
     @Published private(set) var pausedAt: Date?
+    @Published private(set) var sourceKind: MediaSourceKind = .other
 
     private var elapsed: Double = 0
     private var elapsedTimestamp = Date()
@@ -31,6 +32,7 @@ final class NowPlaying: ObservableObject {
     private var buffer = Data()
     private var restartDelay: Double = 1
     private var stopping = false
+    private var settingsObserver: AnyCancellable?
 
     private init() {}
 
@@ -39,6 +41,11 @@ final class NowPlaying: ObservableObject {
     func start() {
         stopping = false
         launchHelper()
+        // `isShown` depends on this setting, so let observers know when it changes.
+        settingsObserver = AppSettings.shared.$onlyShowMusic
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     func stop() {
@@ -172,6 +179,7 @@ final class NowPlaying: ObservableObject {
             duration = 0; elapsed = 0; rate = 0
             artwork = nil; artworkHash = 0
             bundleID = ""; appIcon = nil; appName = ""
+            sourceKind = .other
             pausedAt = nil
             return
         }
@@ -221,6 +229,8 @@ final class NowPlaying: ObservableObject {
     }
 
     private func refreshAppInfo() {
+        sourceKind = MediaSourceKind(bundleID: bundleID)
+        Log.media.info("Now playing from \(self.bundleID, privacy: .public) (\(String(describing: self.sourceKind), privacy: .public))")
         guard !bundleID.isEmpty, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
             appIcon = nil
             appName = ""
@@ -241,9 +251,23 @@ final class NowPlaying: ObservableObject {
         return duration > 0 ? min(max(0, value), duration) : max(0, value)
     }
 
-    /// True while playing, or for `timeout` seconds after playback stopped.
+    /// Whether what's playing counts as music: anything from a music app, or a song
+    /// (something with an album) playing in a browser.
+    var isMusic: Bool {
+        switch sourceKind {
+        case .musicApp: return true
+        case .browser: return !album.isEmpty
+        case .other: return false
+        }
+    }
+
+    /// Whether Cranny shows the current player. With "Only show music" on, anything
+    /// else is treated as if nothing were playing.
+    var isShown: Bool { hasPlayer && (isMusic || !AppSettings.shared.onlyShowMusic) }
+
+    /// True while a shown player plays, or for `timeout` seconds after it stopped.
     func isActive(timeout: Double, now: Date = Date()) -> Bool {
-        guard hasPlayer else { return false }
+        guard isShown else { return false }
         if isPlaying { return true }
         guard let pausedAt else { return false }
         return now.timeIntervalSince(pausedAt) < timeout

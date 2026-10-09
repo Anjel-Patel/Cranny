@@ -137,6 +137,8 @@ final class AppSettings: ObservableObject {
     @Published var coloredSpectrograph = true { didSet { put("coloredSpectrograph", coloredSpectrograph) } }
     @Published var albumCornerRadius: Double = 5 { didSet { put("albumCornerRadius", albumCornerRadius) } }
     @Published var gifPath = "" { didSet { put("gifPath", gifPath) } }
+    /// Live activities and the nook's media player ignore everything but music.
+    @Published var onlyShowMusic = false { didSet { put("onlyShowMusic", onlyShowMusic) } }
 
     // MARK: Calendar
     @Published var calendarMinutesBefore = 15 { didSet { put("calendarMinutesBefore", calendarMinutesBefore) } }
@@ -222,6 +224,7 @@ final class AppSettings: ObservableObject {
         coloredSpectrograph = read("coloredSpectrograph", coloredSpectrograph)
         albumCornerRadius = read("albumCornerRadius", albumCornerRadius)
         gifPath = read("gifPath", gifPath)
+        onlyShowMusic = read("onlyShowMusic", onlyShowMusic)
 
         calendarMinutesBefore = read("calendarMinutesBefore", calendarMinutesBefore)
         calendarShowWhileInEvent = read("calendarShowWhileInEvent", calendarShowWhileInEvent)
@@ -271,6 +274,7 @@ final class AppSettings: ObservableObject {
         coloredSpectrograph = d.coloredSpectrograph
         albumCornerRadius = d.albumCornerRadius
         gifPath = d.gifPath
+        onlyShowMusic = d.onlyShowMusic
         calendarMinutesBefore = d.calendarMinutesBefore
         calendarShowWhileInEvent = d.calendarShowWhileInEvent
         calendarShowTimeLapsed = d.calendarShowTimeLapsed

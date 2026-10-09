@@ -46,7 +46,7 @@ Arrange widgets on a grid, then reorder and resize them.
 - **Media player**: works with anything that shows up in Control Center's Now Playing,
   such as Spotify, Apple Music, YouTube in your browser, IINA and VLC. You get artwork,
   a scrubbable progress bar and playback controls. Click the artwork to jump to the
-  app that's playing.
+  app that's playing. Turn on **Only show music** to keep videos out of the notch.
 - **Calendar**: the day's events, with one-click Join buttons for Zoom, Meet, Teams and
   more. Swipe left or right to change days.
 - **Mirror**: a quick look at your front camera before a call. The camera only runs

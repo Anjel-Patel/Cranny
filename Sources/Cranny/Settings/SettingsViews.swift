@@ -412,6 +412,8 @@ struct LiveActivitiesSettingsView: View {
             .disabled(!s.liveActivitiesEnabled)
 
             Section("Media") {
+                LabeledToggle("Only show music", isOn: $s.onlyShowMusic)
+                Caption("Shows Spotify, Apple Music, TIDAL, Amazon Music and other music apps, plus songs playing in your browser, but not videos. Applies to live activities and the nook's media player.")
                 Picker("Effect", selection: $s.mediaEffect) {
                     ForEach(MediaEffect.allCases) { Text($0.title).tag($0) }
                 }

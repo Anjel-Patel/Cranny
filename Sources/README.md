@@ -64,6 +64,12 @@ accepts play/pause/skip/seek commands on stdin, and exits when Cranny quits. Tha
 [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter) for popularising
 this approach.
 
+With **Only show music** on, `NowPlaying.isShown` hides anything that isn't music, and the
+live activity, Quick Peek, media widget and media swipes all follow it. `MediaSourceKind`
+sorts the playing app: music apps are a list of bundle IDs plus anything whose Info.plist
+declares the Music category. Browsers are the apps that open web links, and what they play
+counts as music when it has an album, which songs have and videos don't.
+
 ### Fullscreen
 
 `FullscreenDetector` asks the window server (SkyLight) whether a display's current Space is
@@ -86,7 +92,9 @@ codesign --force --sign - --identifier io.github.rdbms234.Cranny build/Cranny.ap
 open build/Cranny.app && sleep 2 && build/notchctl update
 ```
 
-Quit any other copy of Cranny first, since two copies fight over the notch.
+Quit any other copy of Cranny first, since two copies fight over the notch. Opening Settings
+in a test copy also moves **Launch at login** to that copy, so switch it off and on again in
+your installed copy afterwards.
 
 ### `@State` and the Command Line Tools
 

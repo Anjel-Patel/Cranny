@@ -274,7 +274,7 @@ final class NotchController {
                 return true
             }
             if overTray { return false }
-            guard settings.gestureControlMedia, NowPlaying.shared.hasPlayer else { return false }
+            guard settings.gestureControlMedia, NowPlaying.shared.isShown else { return false }
             let next = (direction == .left) == settings.invertMediaGestures
             next ? NowPlaying.shared.next() : NowPlaying.shared.previous()
             Haptics.tap()

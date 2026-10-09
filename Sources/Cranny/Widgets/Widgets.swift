@@ -52,7 +52,7 @@ struct MediaWidget: View {
     @EnvironmentObject var player: NowPlaying
 
     var body: some View {
-        if player.hasPlayer {
+        if player.isShown {
             GeometryReader { geo in
                 let art = min(geo.size.height, geo.size.width * 0.4)
                 HStack(spacing: 12) {
@@ -74,7 +74,7 @@ struct MediaWidget: View {
                 }
             }
         } else {
-            EmptyPlayerView()
+            EmptyPlayerView(hidingOtherMedia: player.hasPlayer)
         }
     }
 
@@ -181,11 +181,14 @@ struct MediaControls: View {
 }
 
 struct EmptyPlayerView: View {
+    /// Something is playing, but "Only show music" hides it.
+    var hidingOtherMedia = false
+
     var body: some View {
         VStack(spacing: 6) {
-            Text("No app seems to be running")
+            Text(hidingOtherMedia ? "No music is playing" : "No app seems to be running")
                 .font(.system(size: 12, weight: .semibold))
-            Text("Wanna open one?")
+            Text(hidingOtherMedia ? "Wanna open a music app?" : "Wanna open one?")
                 .font(.system(size: 11))
                 .foregroundStyle(.white.opacity(0.55))
             HStack(spacing: 12) {
