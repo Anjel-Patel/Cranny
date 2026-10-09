@@ -36,6 +36,7 @@ final class NotchController {
             .environmentObject(CalendarService.shared)
             .environmentObject(CameraService.shared)
             .environmentObject(ShortcutsService.shared)
+            .environmentObject(UpdateChecker.shared)
         let host = NotchHostingView(rootView: AnyView(root))
         host.sizingOptions = []
         panel.contentView = host

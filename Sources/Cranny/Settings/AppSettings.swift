@@ -26,7 +26,7 @@ enum WidgetKind: String, CaseIterable, Identifiable, Codable {
 }
 
 enum LiveActivityKind: String, CaseIterable, Identifiable, Codable {
-    case media, calendar, tray
+    case media, calendar, tray, updateAvailable
 
     var id: String { rawValue }
 
@@ -35,6 +35,7 @@ enum LiveActivityKind: String, CaseIterable, Identifiable, Codable {
         case .media: return "Media"
         case .calendar: return "Calendar"
         case .tray: return "Files Tray"
+        case .updateAvailable: return "Update Available"
         }
     }
 
@@ -43,6 +44,7 @@ enum LiveActivityKind: String, CaseIterable, Identifiable, Codable {
         case .media: return "music.note"
         case .calendar: return "calendar"
         case .tray: return "tray.full"
+        case .updateAvailable: return "arrow.down.circle"
         }
     }
 }
@@ -125,7 +127,7 @@ final class AppSettings: ObservableObject {
 
     // MARK: Live activities
     @Published var liveActivitiesEnabled = true { didSet { put("liveActivitiesEnabled", liveActivitiesEnabled) } }
-    @Published var enabledLiveActivities: [LiveActivityKind] = [.media, .tray] {
+    @Published var enabledLiveActivities: [LiveActivityKind] = [.media, .tray, .updateAvailable] {
         didSet { put("enabledLiveActivities", enabledLiveActivities.map(\.rawValue)) }
     }
     @Published var enableQuickPeek = true { didSet { put("enableQuickPeek", enableQuickPeek) } }
@@ -142,6 +144,9 @@ final class AppSettings: ObservableObject {
     @Published var calendarShowTimeLapsed = true { didSet { put("calendarShowTimeLapsed", calendarShowTimeLapsed) } }
     @Published var calendarOnlyMeetings = false { didSet { put("calendarOnlyMeetings", calendarOnlyMeetings) } }
     @Published var hiddenCalendarIDs: [String] = [] { didSet { put("hiddenCalendarIDs", hiddenCalendarIDs) } }
+
+    // MARK: Updates
+    @Published var checkForUpdates = true { didSet { put("checkForUpdates", checkForUpdates) } }
 
     // MARK: Onboarding
     @Published var hasCompletedOnboarding = false { didSet { put("hasCompletedOnboarding", hasCompletedOnboarding) } }
@@ -203,7 +208,13 @@ final class AppSettings: ObservableObject {
         liveActivitiesEnabled = read("liveActivitiesEnabled", liveActivitiesEnabled)
         if let raw = store.stringArray(forKey: "enabledLiveActivities") {
             enabledLiveActivities = raw.compactMap(LiveActivityKind.init(rawValue:))
+            // Lists saved before 1.3 predate the update activity, so switch it on once.
+            if !store.bool(forKey: "addedUpdateActivity"), !enabledLiveActivities.contains(.updateAvailable) {
+                enabledLiveActivities.append(.updateAvailable)
+                store.set(enabledLiveActivities.map(\.rawValue), forKey: "enabledLiveActivities")
+            }
         }
+        store.set(true, forKey: "addedUpdateActivity")
         enableQuickPeek = read("enableQuickPeek", enableQuickPeek)
         interactiveActivities = read("interactiveActivities", interactiveActivities)
         inactivityTimeout = read("inactivityTimeout", inactivityTimeout)
@@ -218,6 +229,7 @@ final class AppSettings: ObservableObject {
         calendarOnlyMeetings = read("calendarOnlyMeetings", calendarOnlyMeetings)
         hiddenCalendarIDs = store.stringArray(forKey: "hiddenCalendarIDs") ?? hiddenCalendarIDs
 
+        checkForUpdates = read("checkForUpdates", checkForUpdates)
         hasCompletedOnboarding = read("hasCompletedOnboarding", hasCompletedOnboarding)
     }
 
@@ -264,6 +276,7 @@ final class AppSettings: ObservableObject {
         calendarShowTimeLapsed = d.calendarShowTimeLapsed
         calendarOnlyMeetings = d.calendarOnlyMeetings
         hiddenCalendarIDs = d.hiddenCalendarIDs
+        checkForUpdates = d.checkForUpdates
     }
 
     // MARK: Derived values

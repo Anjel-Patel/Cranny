@@ -5,18 +5,20 @@
 <h1 align="center">Cranny</h1>
 
 <p align="center">
-  A free, open-source home for everything in your MacBook's notch.<br>
+  Your MacBook's notch, made useful.<br>
   Media controls, a files tray with AirDrop, your calendar, a camera mirror, Shortcuts and live activities.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Anjel-Patel/Cranny/actions/workflows/build.yml"><img src="https://github.com/Anjel-Patel/Cranny/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
+  <a href="https://github.com/Anjel-Patel/Cranny/releases/latest"><img src="https://img.shields.io/github/v/release/Anjel-Patel/Cranny?label=version&color=6c5ce7" alt="Latest version"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-black" alt="macOS 14 or later">
+  <img src="https://img.shields.io/badge/price-free-2ea44f" alt="Free">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Anjel-Patel/Cranny/releases/latest"><b>Download</b></a> ·
-  <a href="#install">Install</a> ·
-  <a href="#build-from-source">Build from source</a>
+  <a href="#install"><b>Install</b></a> ·
+  <a href="https://github.com/Anjel-Patel/Cranny/releases/latest">Download</a> ·
+  <a href="Sources/README.md">For developers</a>
 </p>
 
 ![The open notch with media player, Shortcuts and Mirror widgets](docs/nook.png)
@@ -30,18 +32,16 @@ lo.cafe or NotchNook.
 
 ### The notch
 
-- Hover to wake the notch, then click (or swipe down on the trackpad) to open it, or
+- Hover to wake the notch, then click it (or swipe down on the trackpad) to open it, or
   have it open on hover.
 - Haptic feedback, an optional translucent background, notch width fine-tuning, and a
   demo mode for screen recordings.
-- Macs without a notch get a small handle at the top of the main screen that works
-  the same way. External displays can show one too, and notch sizes and display
-  scaling are picked up automatically.
+- Works on Macs without a notch too: a small handle at the top of the screen does the
+  same job. External displays can have one as well.
 
 ### Nook widgets
 
-Arrange widgets on a grid (one cell is 50pt), then reorder and resize them. Widgets
-that don't fit are hidden.
+Arrange widgets on a grid, then reorder and resize them.
 
 - **Media player**: works with anything that shows up in Control Center's Now Playing,
   such as Spotify, Apple Music, YouTube in your browser, IINA and VLC. You get artwork,
@@ -71,93 +71,63 @@ that don't fit are hidden.
 - Album art plus an audio visualizer tinted with the album's colours, a countdown to
   your next meeting, or the number of files in the tray.
 - Hover for a Quick Peek. Click to play/pause or join a meeting.
-- Fullscreen video stays distraction-free: by default, live activities hide while the
-  fullscreen app is the one playing media. You can instead hide them in every fullscreen
-  app, hide Cranny entirely, or always show everything.
+- Fullscreen video stays distraction-free: live activities step aside while you watch.
+  You can also hide them in every fullscreen app, or always show them.
 - Two-finger swipes over the notch: down or up to open or close it, left or right to
   change tracks.
 
 ## Install
 
-1. Download `Cranny.zip` from the [latest release](https://github.com/Anjel-Patel/Cranny/releases/latest),
+Paste this into Terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Anjel-Patel/Cranny/main/install.sh | bash
+```
+
+It installs the latest version into your Applications folder and opens it
+([see what it does](install.sh)).
+
+<details>
+<summary>Prefer to download it yourself?</summary>
+
+1. Download **Cranny.zip** from the [latest release](https://github.com/Anjel-Patel/Cranny/releases/latest),
    unzip it and move **Cranny** to your Applications folder.
-2. Cranny isn't notarized by Apple yet (that requires a paid developer account), so
-   macOS blocks the first launch. Either run this once in Terminal:
+2. Open Cranny. If macOS says it can't be opened, go to **System Settings → Privacy &
+   Security** and click **Open Anyway**.
 
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/Cranny.app
-   ```
+</details>
 
-   or open Cranny, then go to **System Settings → Privacy & Security** and click
-   **Open Anyway**.
-3. Open Cranny and hover over your notch. Settings are behind the gear in the open
-   notch, or right-click the notch.
+Cranny runs on macOS 14 Sonoma or later, on Apple silicon and Intel Macs.
 
-Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
+## Getting started
 
-## Permissions and privacy
+- Hover over the notch, then click it (or swipe down on the trackpad) to open the nook.
+- Drag a file onto the notch to keep it in the tray.
+- For settings, click the gear in the open notch or right-click the notch.
 
-- **Calendar** (optional): only needed for the Calendar widget and calendar live activity.
-- **Camera** (optional): only used while the Mirror is switched on.
+## Updates
 
-Cranny doesn't need Accessibility or Screen Recording access, and it makes no network
-requests.
+Cranny lets you know when a new version is out: a small notice appears beside the notch,
+and **Settings → About** installs it with one click. After an update, macOS may ask again
+for Calendar or Camera access.
 
-## Build from source
+## Privacy
 
-You need the Xcode Command Line Tools (`xcode-select --install`). Full Xcode isn't
-required.
-
-```sh
-git clone https://github.com/Anjel-Patel/Cranny.git
-cd Cranny
-./build.sh --install   # builds, installs to /Applications and launches it
-```
-
-`./build.sh` on its own leaves the app in `build/Cranny.app` and a zip next to it.
-Add `--universal` to build for both Apple silicon and Intel. Local builds are signed ad
-hoc, so macOS may ask for Calendar or Camera access again after you rebuild.
-
-### Trying other notch sizes
-
-You can make Cranny pretend your main screen has a different notch, or none at all,
-to check layouts for other Macs. Relaunch Cranny after changing it:
-
-```sh
-defaults write io.github.rdbms234.Cranny debugNotchSize 200x38   # width x height in points
-defaults write io.github.rdbms234.Cranny debugNotchSize none     # a Mac without a notch
-defaults delete io.github.rdbms234.Cranny debugNotchSize         # back to normal
-```
-
-## How Now Playing works
-
-Since macOS 15.4, only Apple-signed processes can read the system's Now Playing
-information. Cranny therefore runs a small helper library (`Helper/MediaHelper.m`)
-inside the system's own `/usr/bin/perl`. The helper streams playback state back to
-the app, passes on play/pause/skip/seek commands, and quits along with Cranny. Thanks
-to [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter) for
-popularising this approach.
-
-## Automation
-
-```sh
-open -g "cranny://open"              # open the nook (it stays open until you hover it)
-open -g "cranny://open?tab=tray"
-open -g "cranny://toggle"
-open -g "cranny://close"
-open "cranny://settings?pane=nook"   # general, nook, live, calendar, shortcuts, about
-```
+- Calendar and camera access are optional, and only used by the Calendar and Mirror
+  widgets.
+- Everything stays on your Mac. The only thing Cranny looks up online is whether a new
+  version is available, which you can turn off in Settings → About.
 
 ## Uninstall
 
-Turn off **Launch at login** in Cranny's settings, quit it (right-click the notch →
-Quit Cranny), then delete `/Applications/Cranny.app` and
+Turn off **Launch at login** in Settings, quit Cranny (right-click the notch → Quit
+Cranny) and move it from Applications to the Trash. To remove its data as well, delete
 `~/Library/Application Support/Cranny`.
 
 ## Feedback
 
-Cranny is a young project. If something doesn't work on your Mac, please
-[open an issue](https://github.com/Anjel-Patel/Cranny/issues). Pull requests are welcome.
+Found a bug or have an idea? [Open an issue](https://github.com/Anjel-Patel/Cranny/issues).
+Want to contribute? Start with the [developer guide](Sources/README.md).
 
 ## Credits
 

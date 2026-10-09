@@ -3,7 +3,7 @@ import Foundation
 
 let command = CommandLine.arguments.dropFirst().joined(separator: " ")
 guard !command.isEmpty else {
-    print("usage: notchctl <open [nook|tray] | close | toggle | settings [pane] | hover [seconds] | media toggle|next|previous>")
+    print("usage: notchctl <open [nook|tray] | close | toggle | settings [pane] | hover [seconds] | update | media toggle|next|previous>")
     exit(1)
 }
 DistributedNotificationCenter.default().postNotificationName(

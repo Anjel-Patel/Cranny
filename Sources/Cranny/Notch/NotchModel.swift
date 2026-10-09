@@ -197,6 +197,7 @@ final class LiveActivityCenter: ObservableObject {
         TrayStore.shared.objectWillChange.sink { [weak self] _ in self?.scheduleRecompute() }.store(in: &bag)
         AppSettings.shared.objectWillChange.sink { [weak self] _ in self?.scheduleRecompute() }.store(in: &bag)
         CalendarService.shared.objectWillChange.sink { [weak self] _ in self?.scheduleRecompute() }.store(in: &bag)
+        UpdateChecker.shared.objectWillChange.sink { [weak self] _ in self?.scheduleRecompute() }.store(in: &bag)
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             MainActor.assumeIsolated { LiveActivityCenter.shared.recompute() }
         }
@@ -227,6 +228,8 @@ final class LiveActivityCenter: ObservableObject {
                 inProgress = live.inProgress
             } else if s.isLiveActivityEnabled(.media), NowPlaying.shared.isActive(timeout: s.inactivityTimeout) {
                 next = .media
+            } else if s.isLiveActivityEnabled(.updateAvailable), UpdateChecker.shared.showsActivity {
+                next = .updateAvailable
             } else if s.isLiveActivityEnabled(.tray), !TrayStore.shared.items.isEmpty {
                 next = .tray
             }

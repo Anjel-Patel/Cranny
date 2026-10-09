@@ -102,6 +102,7 @@ struct LiveActivityRow: View {
     @EnvironmentObject var live: LiveActivityCenter
     @EnvironmentObject var player: NowPlaying
     @EnvironmentObject var tray: TrayStore
+    @EnvironmentObject var updates: UpdateChecker
 
     var body: some View {
         let slot = model.barHeight - 9
@@ -143,6 +144,10 @@ struct LiveActivityRow: View {
             Image(systemName: "tray.full.fill")
                 .font(.system(size: slot * 0.58, weight: .semibold))
                 .foregroundStyle(.white)
+        case .updateAvailable:
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: slot * 0.62, weight: .semibold))
+                .foregroundStyle(.green)
         case nil:
             EmptyView()
         }
@@ -180,12 +185,22 @@ struct LiveActivityRow: View {
             Text("\(tray.items.count)")
                 .font(.system(size: 13, weight: .bold).monospacedDigit())
                 .foregroundStyle(.white)
+        case .updateAvailable:
+            Text(updates.available?.version ?? "")
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         case nil:
             EmptyView()
         }
     }
 
     private func activate() {
+        if live.current == .updateAvailable {
+            SettingsWindowController.shared.show(pane: .about)
+            return
+        }
         guard settings.interactiveActivities else {
             if settings.nookEnabled || live.current == .tray { model.open(tab: live.current == .tray ? .tray : .nook) }
             return
@@ -201,7 +216,7 @@ struct LiveActivityRow: View {
             }
         case .tray:
             model.open(tab: .tray)
-        case nil:
+        case .updateAvailable, nil:
             break
         }
     }
@@ -226,6 +241,7 @@ struct PeekInfo: View {
     @EnvironmentObject var live: LiveActivityCenter
     @EnvironmentObject var player: NowPlaying
     @EnvironmentObject var tray: TrayStore
+    @EnvironmentObject var updates: UpdateChecker
 
     var body: some View {
         Group {
@@ -240,6 +256,9 @@ struct PeekInfo: View {
                 }
             case .tray:
                 Text(tray.items.count == 1 ? "1 file in the tray" : "\(tray.items.count) files in the tray")
+            case .updateAvailable:
+                Text("Cranny \(updates.available?.version ?? "") is available").fontWeight(.semibold)
+                    + Text("  Click to update").foregroundStyle(.white.opacity(0.6))
             case nil:
                 EmptyView()
             }
@@ -354,6 +373,7 @@ struct NotchHeader: View {
     @ObservedObject var model: NotchModel
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var tray: TrayStore
+    @EnvironmentObject var updates: UpdateChecker
 
     var body: some View {
         HStack(spacing: 6) {
@@ -364,7 +384,12 @@ struct NotchHeader: View {
             Spacer(minLength: model.closedSize.width + 12)
             HeaderIconButton(symbol: "gearshape.fill") {
                 model.close()
-                SettingsWindowController.shared.show()
+                SettingsWindowController.shared.show(pane: updates.available != nil ? .about : nil)
+            }
+            .overlay(alignment: .topTrailing) {
+                if updates.available != nil {
+                    Circle().fill(.green).frame(width: 7, height: 7).offset(x: -3, y: 2)
+                }
             }
         }
     }

@@ -44,14 +44,15 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             }
         }
 
-        var height: CGFloat {
+        /// nil lets the pane size itself to its content.
+        var height: CGFloat? {
             switch self {
             case .general: return 620
             case .nook: return 520
             case .liveActivities: return 620
             case .calendar: return 460
             case .shortcuts: return 480
-            case .about: return 380
+            case .about: return nil
             }
         }
 
@@ -70,7 +71,9 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
                     .environmentObject(AppSettings.shared)
                     .environmentObject(CalendarService.shared)
                     .environmentObject(ShortcutsService.shared)
+                    .environmentObject(UpdateChecker.shared)
                     .frame(width: 540, height: height)
+                    .fixedSize(horizontal: false, vertical: height == nil)
             )
         }
     }
@@ -114,6 +117,21 @@ final class SettingsTabController: NSTabViewController {
     override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         super.tabView(tabView, didSelect: tabViewItem)
         view.window?.title = tabViewItem?.label ?? "Settings"
+    }
+
+    /// The About pane grows when an update shows up, so resize the window with it,
+    /// keeping the top edge in place.
+    override func preferredContentSizeDidChange(for viewController: NSViewController) {
+        super.preferredContentSizeDidChange(for: viewController)
+        guard let window = view.window, selectedTabViewItemIndex >= 0,
+              tabViewItems[selectedTabViewItemIndex].viewController === viewController
+        else { return }
+        let delta = viewController.preferredContentSize.height - view.frame.height
+        guard abs(delta) >= 1 else { return }
+        var frame = window.frame
+        frame.origin.y -= delta
+        frame.size.height += delta
+        window.setFrame(frame, display: true, animate: window.isVisible)
     }
 }
 
@@ -595,6 +613,8 @@ struct AboutView: View {
             Text("Turns your MacBook's notch into a home for media controls, your calendar, a camera mirror, Shortcuts and a files tray.")
                 .multilineTextAlignment(.center)
                 .frame(width: 400)
+            UpdateSection()
+                .padding(.top, 6)
             Divider().frame(width: 320).padding(.vertical, 6)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Automation").font(.headline)
@@ -606,6 +626,81 @@ struct AboutView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct UpdateSection: View {
+    @EnvironmentObject var updates: UpdateChecker
+    @EnvironmentObject var s: AppSettings
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let release = updates.available {
+                Text("Cranny \(release.version) is available")
+                    .font(.headline)
+                if !release.notes.isEmpty {
+                    ScrollView {
+                        Text(Self.markdown(release.notes))
+                            .font(.callout)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .frame(width: 400, height: 110)
+                    .padding(8)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.1)))
+                }
+                HStack {
+                    Button(updates.canInstallInPlace ? "Install and Relaunch" : "Download") { updates.install() }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(updates.status == .downloading || updates.status == .installing)
+                    Button("Release Notes") { NSWorkspace.shared.open(release.page) }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    Text(statusText).foregroundStyle(.secondary)
+                    Button("Check for Updates") { updates.check(showingDetails: true) }
+                        .disabled(updates.status == .checking)
+                }
+            }
+            if updates.status == .downloading {
+                ProgressView("Downloading the update…").controlSize(.small)
+            }
+            if case .failed(let message) = updates.status {
+                Text(message).font(.caption).foregroundStyle(.red)
+            }
+            LabeledToggle("Check for updates automatically", isOn: $s.checkForUpdates)
+                .toggleStyle(.checkbox)
+        }
+        .onAppear { updates.markSeen() }
+    }
+
+    private var statusText: String {
+        switch updates.status {
+        case .checking: return "Checking for updates…"
+        case .upToDate: return "Cranny is up to date."
+        case .failed: return "Couldn't check for updates."
+        default:
+            if let date = updates.lastChecked { return "Last checked \(date.formatted(.relative(presentation: .named)))." }
+            return "Not checked yet."
+        }
+    }
+
+    /// Release notes use headings and lists, which inline Markdown doesn't render,
+    /// so turn those into bold lines and bullets first.
+    static func markdown(_ text: String) -> AttributedString {
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n")
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> String in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("#") {
+                    return "**" + trimmed.drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces) + "**"
+                }
+                if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") { return "• " + trimmed.dropFirst(2) }
+                return String(line)
+            }
+        let source = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return (try? AttributedString(markdown: source, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(source)
     }
 }
 

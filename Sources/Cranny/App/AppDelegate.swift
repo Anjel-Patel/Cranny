@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         CommandCenter.shared.start()
         rebuildControllers()
         MouseTracker.shared.start()
+        UpdateChecker.shared.start()
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
@@ -74,6 +75,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showAbout(_ sender: Any?) {
         SettingsWindowController.shared.show(pane: .about)
     }
+
+    @objc func checkForUpdates(_ sender: Any?) {
+        UpdateChecker.shared.check(showingDetails: true)
+        SettingsWindowController.shared.show(pane: .about)
+    }
 }
 
 @MainActor
@@ -83,6 +89,7 @@ enum AppMenu {
 
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Cranny", action: #selector(AppDelegate.showAbout(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Settings…", action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ",")
         appMenu.addItem(.separator())
@@ -164,6 +171,8 @@ final class CommandCenter {
                 let rect = controller.notchRect()
                 MouseTracker.shared.simulate(NSPoint(x: rect.midX, y: rect.maxY - 2), for: Double(argument ?? "") ?? 3)
             }
+        case "update":
+            UpdateChecker.shared.check()
         case "media":
             switch argument {
             case "toggle": NowPlaying.shared.togglePlayPause()

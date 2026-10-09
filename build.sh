@@ -68,8 +68,10 @@ codesign --force --sign - --identifier io.github.rdbms234.Cranny "$APP"
 codesign --verify --strict "$APP"
 
 echo "› Zipping"
-rm -f "$BUILD_DIR/$APP_NAME.zip"
+rm -f "$BUILD_DIR/$APP_NAME.zip" "$BUILD_DIR/$APP_NAME.zip.sha256"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$BUILD_DIR/$APP_NAME.zip"
+# Published next to the zip so install.sh and the in-app updater can verify downloads.
+(cd "$BUILD_DIR" && shasum -a 256 "$APP_NAME.zip" > "$APP_NAME.zip.sha256")
 
 if $INSTALL; then
   echo "› Installing to $INSTALL_DIR"
