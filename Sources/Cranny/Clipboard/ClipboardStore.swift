@@ -97,6 +97,8 @@ final class ClipboardStore: ObservableObject {
         case "deny": return .deny
         default: break
         }
+        // `accessBehavior` needs the macOS 15.4 SDK, which came with Swift 6.1.
+        #if compiler(>=6.1)
         if #available(macOS 15.4, *) {
             switch pasteboard.accessBehavior {
             case .alwaysAllow: return .allow
@@ -105,6 +107,7 @@ final class ClipboardStore: ObservableObject {
             default: return .notAsked
             }
         }
+        #endif
         return .allow
     }
 
