@@ -37,6 +37,7 @@ final class NotchController {
             .environmentObject(CameraService.shared)
             .environmentObject(ShortcutsService.shared)
             .environmentObject(UpdateChecker.shared)
+            .environmentObject(ClipboardStore.shared)
         let host = NotchHostingView(rootView: AnyView(root))
         host.sizingOptions = []
         panel.contentView = host
@@ -195,6 +196,7 @@ final class NotchController {
         } else {
             model.tab = activity == .tray ? .tray : .nook
         }
+        if model.tab == .clipboard && !settings.clipboardHistory { model.tab = .nook }
         if model.tab == .nook && !settings.nookEnabled { model.tab = .tray }
         model.dragActive = viaDrag
         model.pinned = pinned
@@ -218,6 +220,7 @@ final class NotchController {
         model.pinned = false
         model.peeking = false
         model.calendarDayOffset = 0
+        model.mirrorExpanded = false
         CameraService.shared.stop()
         refreshPointer()
         MouseTracker.shared.refreshSoon()
@@ -402,9 +405,10 @@ final class MouseTracker {
             guard let controller = NotchRegistry.controller(for: event.window) else { return false }
             return controller.handleScroll(event)
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
-            let consumed = TrayDragOut.shared.handle(event)
+            let trayDrag = TrayDragOut.shared.handle(event)
+            let clipboardDrag = ClipboardDragOut.shared.handle(event)
             handle(event, local: true)
-            return consumed
+            return trayDrag || clipboardDrag
         default:
             handle(event, local: true)
             return false

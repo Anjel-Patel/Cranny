@@ -6,7 +6,7 @@
 
 <p align="center">
   Your MacBook's notch, made useful.<br>
-  Media controls, a files tray with AirDrop, your calendar, a camera mirror, Shortcuts and live activities.
+  Media controls, a files tray with AirDrop, clipboard history, your calendar, a camera mirror, Shortcuts and live activities.
 </p>
 
 <p align="center">
@@ -50,7 +50,8 @@ Arrange widgets on a grid, then reorder and resize them.
 - **Calendar**: the day's events, with one-click Join buttons for Zoom, Meet, Teams and
   more. Swipe left or right to change days.
 - **Mirror**: a quick look at your front camera before a call. The camera only runs
-  while the mirror is on.
+  while the mirror is on. For a bigger view, try **Larger Mirror** (experimental) in
+  Settings → Nook.
 - **Shortcuts**: run your macOS Shortcuts from the notch.
 
 ### Files tray
@@ -61,6 +62,14 @@ Arrange widgets on a grid, then reorder and resize them.
   switch apps or spaces. Drag them back out to move them where you need them.
 - Drop files on **AirDrop** to share them.
 - Images, links and text dropped on the tray are saved as files.
+
+### Clipboard
+
+- Your last few copies, 5 by default and up to 10, as tiles with a preview: text,
+  links, pictures and files.
+- Click a tile to copy it again with its original formatting, or drag it into any app.
+- The history lives in memory only and is cleared when Cranny quits. Passwords from
+  password managers are never recorded.
 
 ### Live activities
 
@@ -103,6 +112,7 @@ Cranny runs on macOS 14 Sonoma or later, on Apple silicon and Intel Macs.
 
 - Hover over the notch, then click it (or swipe down on the trackpad) to open the nook.
 - Drag a file onto the notch to keep it in the tray.
+- Open the Clipboard tab to reuse something you copied earlier.
 - For settings, click the gear in the open notch or right-click the notch.
 
 ## Updates
@@ -117,6 +127,8 @@ for Calendar or Camera access.
   widgets.
 - Everything stays on your Mac. The only thing Cranny looks up online is whether a new
   version is available, which you can turn off in Settings → About.
+- Clipboard history is kept in memory and gone when Cranny quits. You can turn it off in
+  Settings → Nook.
 
 ## Uninstall
 

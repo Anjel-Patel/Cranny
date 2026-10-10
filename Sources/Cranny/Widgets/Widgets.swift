@@ -41,7 +41,7 @@ struct NookView: View {
         case .media: MediaWidget()
         case .calendar: CalendarWidget(model: model)
         case .shortcuts: ShortcutsWidget(model: model)
-        case .mirror: MirrorWidget()
+        case .mirror: MirrorWidget(model: model)
         }
     }
 }
@@ -351,13 +351,15 @@ struct EventRow: View {
 // MARK: - Mirror
 
 struct MirrorWidget: View {
+    @ObservedObject var model: NotchModel
     @EnvironmentObject var camera: CameraService
+    @EnvironmentObject var settings: AppSettings
     @ViewState private var hovering = false
 
     var body: some View {
         ZStack {
             if camera.isRunning {
-                CameraPreview(session: camera.session)
+                CameraPreview(layer: camera.previewLayer)
             } else {
                 Color.white.opacity(hovering ? 0.12 : 0.07)
                 VStack(spacing: 6) {
@@ -372,14 +374,60 @@ struct MirrorWidget: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
-        .onTapGesture {
-            if camera.isDenied {
-                camera.openPrivacySettings()
+        .onTapGesture(perform: activate)
+        .help(settings.largerMirror && !camera.isDenied ? "Click for a bigger mirror" : "")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Mirror"))
+        .accessibilityValue(Text(camera.isRunning ? "On" : "Off"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { activate() }
+        // Growing into the larger Mirror replaces this widget, but the camera should keep going.
+        .onDisappear { if !model.mirrorExpanded { camera.stop() } }
+    }
+
+    private func activate() {
+        if camera.isDenied {
+            camera.openPrivacySettings()
+        } else if settings.largerMirror {
+            camera.start()
+            model.mirrorExpanded = true
+        } else {
+            camera.toggle()
+        }
+    }
+}
+
+/// The experimental larger Mirror. Clicking it puts it away again.
+struct LargeMirrorView: View {
+    @ObservedObject var model: NotchModel
+    @EnvironmentObject var camera: CameraService
+
+    var body: some View {
+        let size = model.largeMirrorSize
+        ZStack {
+            Color.white.opacity(0.07)
+            if camera.isRunning {
+                CameraPreview(layer: camera.previewLayer)
             } else {
-                camera.toggle()
+                VStack(spacing: 8) {
+                    Image(systemName: camera.isDenied ? "video.slash.fill" : "person.crop.square.fill")
+                        .font(.system(size: 30))
+                    Text(camera.isDenied ? "No access to the camera" : (camera.noCamera ? "No camera" : "Starting the camera…"))
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .foregroundStyle(.white.opacity(0.75))
             }
         }
-        .onDisappear { camera.stop() }
+        .frame(width: size.width, height: size.height)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture { model.mirrorExpanded = false }
+        .help("Click to put the mirror away")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Larger Mirror"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { model.mirrorExpanded = false }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

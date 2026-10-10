@@ -324,6 +324,20 @@ struct NookSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            Section("Clipboard") {
+                LabeledToggle("Clipboard history", isOn: $s.clipboardHistory)
+                Stepper("Keep the last \(s.clipboardSize) items", value: $s.clipboardSize, in: 5...10)
+                    .accessibilityLabel(Text("Clipboard history size"))
+                    .accessibilityValue(Text("\(s.clipboardSize) items"))
+                    .disabled(!s.clipboardHistory)
+                Caption("What you copy shows up in the Clipboard tab. It stays in memory on this Mac and is cleared when Cranny quits, and passwords from password managers are skipped.")
+            }
+
+            Section("Mirror") {
+                LabeledToggle("Larger Mirror (experimental)", isOn: $s.largerMirror)
+                Caption("Clicking the Mirror widget opens a bigger mirror. Click it again, or move the pointer away from the notch, to put it away. The camera turns off either way.")
+            }
         }
         .formStyle(.grouped)
     }

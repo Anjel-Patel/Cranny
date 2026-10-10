@@ -119,6 +119,13 @@ final class AppSettings: ObservableObject {
     }
     @Published var showDividers = true { didSet { put("showDividers", showDividers) } }
     @Published var widgetsPadding: Double = 12 { didSet { put("widgetsPadding", widgetsPadding) } }
+    /// Experimental: clicking the Mirror widget opens a bigger mirror.
+    @Published var largerMirror = false { didSet { put("largerMirror", largerMirror) } }
+
+    // MARK: Clipboard
+    @Published var clipboardHistory = true { didSet { put("clipboardHistory", clipboardHistory) } }
+    /// How many recent copies the Clipboard tab keeps (5 to 10).
+    @Published var clipboardSize = 5 { didSet { put("clipboardSize", clipboardSize) } }
     @Published var mediaWidthCells = 5 { didSet { put("mediaWidthCells", mediaWidthCells) } }
     @Published var calendarWidthCells = 4 { didSet { put("calendarWidthCells", calendarWidthCells) } }
     @Published var shortcutsWidthCells = 3 { didSet { put("shortcutsWidthCells", shortcutsWidthCells) } }
@@ -201,6 +208,9 @@ final class AppSettings: ObservableObject {
         }
         showDividers = read("showDividers", showDividers)
         widgetsPadding = read("widgetsPadding", widgetsPadding)
+        largerMirror = read("largerMirror", largerMirror)
+        clipboardHistory = read("clipboardHistory", clipboardHistory)
+        clipboardSize = min(10, max(5, read("clipboardSize", clipboardSize)))
         mediaWidthCells = read("mediaWidthCells", mediaWidthCells)
         calendarWidthCells = read("calendarWidthCells", calendarWidthCells)
         shortcutsWidthCells = read("shortcutsWidthCells", shortcutsWidthCells)
@@ -260,6 +270,9 @@ final class AppSettings: ObservableObject {
         enabledWidgets = d.enabledWidgets
         showDividers = d.showDividers
         widgetsPadding = d.widgetsPadding
+        largerMirror = d.largerMirror
+        clipboardHistory = d.clipboardHistory
+        clipboardSize = d.clipboardSize
         mediaWidthCells = d.mediaWidthCells
         calendarWidthCells = d.calendarWidthCells
         shortcutsWidthCells = d.shortcutsWidthCells

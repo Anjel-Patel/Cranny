@@ -32,6 +32,7 @@ after rebuilding.
 | `Sources/Cranny/Notch` | Notch window, layout model, pointer and gesture handling, notch views |
 | `Sources/Cranny/Widgets` | Media, Calendar, Mirror and Shortcuts widgets |
 | `Sources/Cranny/Tray` | Files tray storage, drag in and out, AirDrop |
+| `Sources/Cranny/Clipboard` | Clipboard history, its tab, dragging items out |
 | `Sources/Cranny/Services` | Now Playing, Calendar (EventKit), camera, Shortcuts, login item, updates |
 | `Sources/Cranny/Settings` | Settings model, NotchNook import, Settings and Welcome windows |
 | `Sources/Cranny/Support` | Logging, notch geometry, fullscreen detection, image helpers |
@@ -96,6 +97,31 @@ open build/Cranny.app && sleep 2 && build/notchctl update
 Quit any other copy of Cranny first, since two copies fight over the notch. Opening Settings
 in a test copy also moves **Launch at login** to that copy, so switch it off and on again in
 your installed copy afterwards.
+
+### Clipboard
+
+`ClipboardStore` reads the clipboard's change count twice a second, which is cheap and never
+triggers a privacy prompt, and only reads the clipboard itself after it changed. Each copy
+keeps every format the app offered, so copying it back keeps its formatting. Copies marked
+private or temporary ([nspasteboard.org](http://nspasteboard.org) types, used by password
+managers) are skipped. Nothing is written to disk.
+
+macOS has a "Paste from Other Apps" privacy setting (`NSPasteboard.accessBehavior`) that
+macOS 27 doesn't enforce yet. If it does one day, Cranny reads on the first copy, which shows
+macOS's one-time prompt and lists Cranny in Privacy & Security, then shows a card asking the
+user to set it to Allow. To see that card:
+
+```sh
+defaults write io.github.rdbms234.Cranny debugClipboardAccess ask   # or deny
+defaults delete io.github.rdbms234.Cranny debugClipboardAccess
+```
+
+### Camera
+
+A capture session can't be changed from two threads at once, so `CameraEngine` does all
+setup, starting and stopping on one serial queue, and the Mirror shares a single preview
+layer that's attached once. Clicks only record whether the camera should run, and the queue
+catches up with the latest wish. Rebuilding this per click is what used to crash Cranny.
 
 ### `@State` and the Command Line Tools
 
