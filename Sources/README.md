@@ -79,7 +79,8 @@ overlays from background utilities don't trigger it.
 
 ### Updates
 
-`UpdateChecker` asks GitHub's releases API for the latest release once a day. To install,
+`UpdateChecker` asks GitHub's releases API for the latest release 20 seconds after every
+launch, then once a day while Cranny runs. A failed check is retried within the hour. To install,
 it downloads `Cranny.zip` and `Cranny.zip.sha256` from that release, checks the hash,
 unpacks the app with `ditto`, and hands over to a small script. The script waits for
 Cranny to quit, swaps the bundle (restoring the old one if anything fails) and reopens it.

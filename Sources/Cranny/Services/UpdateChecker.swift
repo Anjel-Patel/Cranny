@@ -51,20 +51,24 @@ final class UpdateChecker: ObservableObject {
         return FileManager.default.isWritableFile(atPath: app.deletingLastPathComponent().path)
     }
 
+    /// Checks shortly after every launch, so restarting picks up a new release, then about
+    /// once a day while Cranny runs.
     func start() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
-            MainActor.assumeIsolated { UpdateChecker.shared.checkIfDue() }
+            MainActor.assumeIsolated { UpdateChecker.shared.checkIfDue(interval: 0) }
         }
         let timer = Timer(timeInterval: 3600, repeats: true) { _ in
-            MainActor.assumeIsolated { UpdateChecker.shared.checkIfDue() }
+            MainActor.assumeIsolated { UpdateChecker.shared.checkIfDue(interval: 23 * 3600) }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
 
-    private func checkIfDue() {
+    /// Checks when automatic checks are on and the last successful check is at least
+    /// `interval` seconds old.
+    private func checkIfDue(interval: TimeInterval) {
         guard AppSettings.shared.checkForUpdates else { return }
-        if let lastChecked, Date().timeIntervalSince(lastChecked) < 23 * 3600 { return }
+        if let lastChecked, Date().timeIntervalSince(lastChecked) < interval { return }
         check()
     }
 
@@ -93,11 +97,11 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func finishCheck(_ result: Result<Release, Error>, seen: Bool) {
-        let now = Date()
-        lastChecked = now
-        defaults.set(now, forKey: "lastUpdateCheck")
         switch result {
         case .success(let release):
+            let now = Date()
+            lastChecked = now
+            defaults.set(now, forKey: "lastUpdateCheck")
             if Self.isNewer(release.version, than: currentVersion) {
                 available = release
                 status = .idle
@@ -108,6 +112,7 @@ final class UpdateChecker: ObservableObject {
                 status = .upToDate
             }
         case .failure(let error):
+            // Not counted as a check, so the hourly timer tries again.
             status = .failed(error.localizedDescription)
         }
     }
