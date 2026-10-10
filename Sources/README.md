@@ -170,8 +170,12 @@ log stream --style compact --predicate 'subsystem == "io.github.rdbms234.Cranny"
 
 ## Releasing
 
+`main` is protected: changes land through pull requests, both CI builds must pass, and pull
+requests are merged with **Rebase and merge**, the only method allowed, which keeps each
+commit's author.
+
 1. Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Resources/Info.plist`.
-2. Open a pull request and merge it once CI passes.
+2. Open a pull request and merge it once CI passes: `gh pr merge <number> --rebase`.
 3. Build from `main`: `./build.sh --universal`.
 4. Publish both assets. The installer and the in-app updater look for exactly these names
    on the latest release. The notes appear in Settings → About, so keep them short.
