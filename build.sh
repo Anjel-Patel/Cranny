@@ -23,10 +23,17 @@ done
 ARCH_FLAGS=()
 for a in "${ARCHS[@]}"; do ARCH_FLAGS+=(-arch "$a"); done
 
+mkdir -p "$BUILD_DIR"
 BINS=()
 for a in "${ARCHS[@]}"; do
   echo "› Compiling app ($a)"
-  swift build -c release --arch "$a" 2>&1 | grep -E "error|warning: unre|Build" || true
+  # A failed compile must stop here; otherwise the previous build's binary would be packaged.
+  if ! swift build -c release --arch "$a" > "$BUILD_DIR/compile-$a.log" 2>&1; then
+    grep -E "error" "$BUILD_DIR/compile-$a.log" | sed 's/\x1b\[[0-9;]*m//g' | sort -u
+    echo "Build failed for $a (full log: $BUILD_DIR/compile-$a.log)"
+    exit 1
+  fi
+  grep -E "warning: unre|Build" "$BUILD_DIR/compile-$a.log" || true
   BIN="$(swift build -c release --arch "$a" --show-bin-path)/$APP_NAME"
   [[ -x "$BIN" ]] || { echo "Build failed for $a"; exit 1; }
   # Newer SwiftPM versions reuse one output folder for every architecture, so keep a copy.
