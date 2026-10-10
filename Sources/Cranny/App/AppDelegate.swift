@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rebuildControllers()
         MouseTracker.shared.start()
         UpdateChecker.shared.start()
+        ClipboardStore.shared.start()
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main

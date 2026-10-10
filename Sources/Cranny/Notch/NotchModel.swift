@@ -2,8 +2,8 @@ import AppKit
 import Combine
 
 enum NotchState: Equatable { case closed, open }
-enum NotchRegion: Hashable { case calendar, tray }
-enum NotchTab: String { case nook, tray }
+enum NotchRegion: Hashable { case calendar, tray, clipboard }
+enum NotchTab: String { case nook, tray, clipboard }
 
 enum NotchAppearance: Equatable {
     /// Nothing drawn; only the physical notch is visible.
@@ -39,7 +39,14 @@ final class NotchModel: ObservableObject {
     private let menuBarHeight: CGFloat
 
     @Published var state: NotchState = .closed
-    @Published var tab: NotchTab = .nook
+    @Published var tab: NotchTab = .nook {
+        didSet { if tab != .nook { mirrorExpanded = false } }
+    }
+    /// The larger Mirror is showing in place of the widgets (experimental setting).
+    /// Putting it away turns the camera off.
+    @Published var mirrorExpanded = false {
+        didSet { if oldValue && !mirrorExpanded { CameraService.shared.stop() } }
+    }
     @Published var hovering = false
     @Published var peeking = false
     /// The notch was opened by something being dragged onto it.
@@ -93,7 +100,14 @@ final class NotchModel: ObservableObject {
         return CGFloat(settings.nookWidthCells) * cell + CGFloat(count - 1) * settings.widgetsPadding
     }
     var openBodyWidth: CGFloat { contentWidth + 2 * settings.contentPadding }
-    var openHeight: CGFloat { barHeight + 6 + contentHeight + settings.contentPadding }
+    var openHeight: CGFloat { barHeight + 6 + openContentHeight + settings.contentPadding }
+    /// Height of the area under the header: the widgets, or the larger Mirror.
+    var openContentHeight: CGFloat { mirrorExpanded ? largeMirrorSize.height : contentHeight }
+
+    /// The larger Mirror: 300pt tall and as wide as the camera's 16:9 picture, within the nook.
+    var largeMirrorSize: CGSize {
+        CGSize(width: min(contentWidth, (300 * 16 / 9).rounded()), height: 300)
+    }
 
     func appearance(activity: LiveActivityKind?) -> NotchAppearance {
         if state == .open { return .open }
@@ -168,7 +182,8 @@ final class NotchModel: ObservableObject {
 
     /// Largest size the notch can take, used to size the window.
     var maximumSize: CGSize {
-        CGSize(width: max(openBodyWidth + 24, 400), height: max(openHeight, barHeight + 40))
+        let mirror = settings.largerMirror ? barHeight + 6 + largeMirrorSize.height + settings.contentPadding : 0
+        return CGSize(width: max(openBodyWidth + 24, 400), height: max(openHeight, mirror, barHeight + 40))
     }
 
     // MARK: Actions (forwarded to the controller, which owns timing and the window)

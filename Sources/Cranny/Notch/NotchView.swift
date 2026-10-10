@@ -353,14 +353,20 @@ struct OpenNotchView: View {
             NotchHeader(model: model)
                 .frame(height: model.barHeight)
             Group {
-                switch model.tab {
-                case .nook:
-                    NookView(model: model)
-                case .tray:
-                    TrayView(model: model)
+                if model.mirrorExpanded {
+                    LargeMirrorView(model: model)
+                } else {
+                    switch model.tab {
+                    case .nook:
+                        NookView(model: model)
+                    case .tray:
+                        TrayView(model: model)
+                    case .clipboard:
+                        ClipboardView(model: model)
+                    }
                 }
             }
-            .frame(width: model.contentWidth, height: model.contentHeight)
+            .frame(width: model.contentWidth, height: model.openContentHeight)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, layout.top + settings.contentPadding)
@@ -374,14 +380,18 @@ struct NotchHeader: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var tray: TrayStore
     @EnvironmentObject var updates: UpdateChecker
+    @EnvironmentObject var clipboard: ClipboardStore
 
     var body: some View {
         HStack(spacing: 6) {
-            if settings.nookEnabled {
-                tab(.nook, title: "Nook", symbol: "square.grid.2x2.fill")
+            // Tabs stay left of the physical notch. The selected one shows its name, unless even
+            // that doesn't fit, in which case they're icons only (names show on hover).
+            ViewThatFits(in: .horizontal) {
+                tabs(labelled: true)
+                tabs(labelled: false)
             }
-            tab(.tray, title: "Tray", symbol: tray.items.isEmpty ? "tray.fill" : "tray.full.fill")
-            Spacer(minLength: model.closedSize.width + 12)
+            .frame(width: max(0, (model.contentWidth - model.closedSize.width) / 2 - 8), alignment: .leading)
+            Spacer(minLength: 0)
             HeaderIconButton(symbol: "gearshape.fill") {
                 model.close()
                 SettingsWindowController.shared.show(pane: updates.available != nil ? .about : nil)
@@ -394,14 +404,30 @@ struct NotchHeader: View {
         }
     }
 
-    private func tab(_ tab: NotchTab, title: String, symbol: String) -> some View {
+    private func tabs(labelled: Bool) -> some View {
+        HStack(spacing: 4) {
+            if settings.nookEnabled {
+                tab(.nook, title: "Nook", symbol: "square.grid.2x2.fill", labelled: labelled)
+            }
+            tab(.tray, title: "Tray", symbol: tray.items.isEmpty ? "tray.fill" : "tray.full.fill", labelled: labelled)
+            if settings.clipboardHistory {
+                tab(.clipboard, title: "Clipboard", symbol: "doc.on.clipboard.fill", labelled: labelled)
+            }
+        }
+        .fixedSize()
+    }
+
+    private func tab(_ tab: NotchTab, title: String, symbol: String, labelled: Bool) -> some View {
         let selected = model.tab == tab
+        let showsTitle = selected && labelled
         return Button {
             model.tab = tab
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
-                Text(title).font(.system(size: 12, weight: .semibold))
+                if showsTitle {
+                    Text(title).font(.system(size: 12, weight: .semibold))
+                }
                 if tab == .tray && !tray.items.isEmpty {
                     Text("\(tray.items.count)")
                         .font(.system(size: 10, weight: .bold).monospacedDigit())
@@ -410,13 +436,21 @@ struct NotchHeader: View {
                         .background(Capsule().fill(.white.opacity(0.2)))
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, showsTitle ? 10 : 8)
             .padding(.vertical, 5)
             .background(Capsule().fill(.white.opacity(selected ? 0.16 : 0)))
             .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
+            .overlay(alignment: .topTrailing) {
+                // macOS needs Cranny to be allowed before the history can work.
+                if tab == .clipboard && clipboard.access != .allowed {
+                    Circle().fill(.orange).frame(width: 6, height: 6).offset(x: -2, y: 2)
+                }
+            }
             .contentShape(Capsule())
         }
         .buttonStyle(PressScaleStyle())
+        .help(title)
+        .accessibilityLabel(Text(title))
     }
 }
 
