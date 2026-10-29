@@ -48,13 +48,13 @@ final class ClipboardDragOut: NSObject, NSDraggingSource {
             writers = urls.map { $0 as NSURL }
             icon = NSWorkspace.shared.icon(forFile: urls[0].path)
         case .image(let preview):
-            writers = Self.pasteboardItems(item)
+            writers = item.pasteboardItems()
             icon = preview
         case .link:
-            writers = Self.pasteboardItems(item)
+            writers = item.pasteboardItems()
             icon = NSWorkspace.shared.icon(for: .internetLocation)
         case .text:
-            writers = Self.pasteboardItems(item)
+            writers = item.pasteboardItems()
             icon = NSWorkspace.shared.icon(for: .plainText)
         }
         let point = view.convert(event.locationInWindow, from: nil)
@@ -68,17 +68,6 @@ final class ClipboardDragOut: NSObject, NSDraggingSource {
         session.animatesToStartingPositionsOnCancelOrFail = true
         Log.app.info("Dragging a clipboard item")
         return true
-    }
-
-    /// The item's formats, ready to hand to another app.
-    private static func pasteboardItems(_ item: ClipboardStore.Item) -> [NSPasteboardItem] {
-        item.contents.map { representations in
-            let pasteboardItem = NSPasteboardItem()
-            for representation in representations {
-                pasteboardItem.setData(representation.data, forType: representation.type)
-            }
-            return pasteboardItem
-        }
     }
 
     nonisolated func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {

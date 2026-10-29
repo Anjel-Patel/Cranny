@@ -97,7 +97,16 @@ struct ClipTile: View {
         }
         .frame(width: side, height: side)
         .clipShape(shape)
-        .overlay(shape.strokeBorder(.white.opacity(isCurrent ? 0.55 : 0), lineWidth: 1.5))
+        // Marks what's on the clipboard, which ⌘V pastes. The dark line inside keeps it
+        // visible around light pictures.
+        .overlay {
+            ZStack {
+                shape.strokeBorder(.white, lineWidth: 2)
+                shape.inset(by: 2).strokeBorder(.black.opacity(0.45), lineWidth: 1)
+            }
+            .opacity(isCurrent ? 1 : 0)
+            .animation(.easeOut(duration: 0.15), value: isCurrent)
+        }
         .overlay(alignment: .topTrailing) {
             if hovering && !justCopied {
                 Button {
@@ -123,15 +132,17 @@ struct ClipTile: View {
             Button("Copy") { clipboard.copy(item) }
             Button("Remove") { clipboard.remove(item.id) }
             Divider()
-            Button("Clear All") { clipboard.removeAll() }
+            Button("Clear All") { clipboard.clearAll() }
         }
         .help(helpText)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(accessibilityText))
+        .accessibilityValue(Text(isCurrent ? "On the clipboard" : ""))
         .accessibilityHint(Text("Copies it again"))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { clipboard.copy(item) }
         .accessibilityAction(named: Text("Remove")) { clipboard.remove(item.id) }
+        .accessibilityAction(named: Text("Clear All")) { clipboard.clearAll() }
     }
 
     @ViewBuilder private var content: some View {

@@ -31,6 +31,17 @@ final class ClipboardStore: ObservableObject {
         let signature: String
         let appName: String?
         let appIcon: NSImage?
+
+        /// New pasteboard items holding every format, for the clipboard or a drag.
+        func pasteboardItems() -> [NSPasteboardItem] {
+            contents.map { representations in
+                let pasteboardItem = NSPasteboardItem()
+                for representation in representations {
+                    pasteboardItem.setData(representation.data, forType: representation.type)
+                }
+                return pasteboardItem
+            }
+        }
     }
 
     /// Whether macOS lets Cranny read the clipboard.
@@ -246,16 +257,7 @@ final class ClipboardStore: ObservableObject {
 
     /// Puts an item back on the clipboard, with all its formats, and moves it to the front.
     func copy(_ item: Item) {
-        pasteboard.clearContents()
-        pasteboard.writeObjects(item.contents.map { representations in
-            let pasteboardItem = NSPasteboardItem()
-            for representation in representations {
-                pasteboardItem.setData(representation.data, forType: representation.type)
-            }
-            return pasteboardItem
-        })
-        // Cranny's own copy isn't a new item.
-        lastChangeCount = pasteboard.changeCount
+        write(item)
         if let index = items.firstIndex(where: { $0.id == item.id }), index > 0 {
             var next = items
             next.insert(next.remove(at: index), at: 0)
@@ -271,14 +273,52 @@ final class ClipboardStore: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9, execute: work)
     }
 
+    /// Removes an item. If it's what's on the clipboard, the next item takes its place there,
+    /// or the clipboard is emptied when nothing is left, so a removed item can't be pasted.
     func remove(_ id: UUID) {
+        let onClipboard = clipboardHolds(id)
         items.removeAll { $0.id == id }
-        if currentID == id { currentID = nil }
+        guard currentID == id else { return }
+        currentID = nil
+        guard onClipboard else { return }
+        if let next = items.first {
+            write(next)
+            currentID = next.id
+        } else {
+            emptyClipboard()
+        }
     }
 
+    /// Clear All: empties the history, and the clipboard too when it holds an item from it.
+    func clearAll() {
+        let onClipboard = currentID.map(clipboardHolds) ?? false
+        removeAll()
+        if onClipboard { emptyClipboard() }
+    }
+
+    /// Empties the history but leaves the clipboard alone, for turning clipboard history off.
     func removeAll() {
         items.removeAll()
         currentID = nil
+    }
+
+    /// Whether the clipboard still holds this item. If it changed since Cranny last looked, it
+    /// holds something newer, which must not be overwritten.
+    private func clipboardHolds(_ id: UUID) -> Bool {
+        currentID == id && pasteboard.changeCount == lastChangeCount
+    }
+
+    /// Puts an item on the clipboard with all its formats.
+    private func write(_ item: Item) {
+        pasteboard.clearContents()
+        pasteboard.writeObjects(item.pasteboardItems())
+        // Cranny's own copy isn't a new item.
+        lastChangeCount = pasteboard.changeCount
+    }
+
+    private func emptyClipboard() {
+        pasteboard.clearContents()
+        lastChangeCount = pasteboard.changeCount
     }
 
     private func trim(to size: Int) {
