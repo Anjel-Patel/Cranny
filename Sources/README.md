@@ -106,6 +106,11 @@ keeps every format the app offered, so copying it back keeps its formatting. Cop
 private or temporary ([nspasteboard.org](http://nspasteboard.org) types, used by password
 managers) are skipped. Nothing is written to disk.
 
+Removing the item that's on the clipboard puts the next one there, or empties the clipboard
+when it was the last one, and Clear All empties it too. Either only happens while the change
+count shows the clipboard still holds that item, so a newer copy Cranny hasn't read yet is
+never overwritten. Turning clipboard history off clears the history but not the clipboard.
+
 macOS has a "Paste from Other Apps" privacy setting (`NSPasteboard.accessBehavior`) that
 macOS 27 doesn't enforce yet. If it does one day, Cranny reads on the first copy, which shows
 macOS's one-time prompt and lists Cranny in Privacy & Security, then shows a card asking the

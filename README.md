@@ -68,6 +68,8 @@ Arrange widgets on a grid, then reorder and resize them.
 - Your last few copies, 5 by default and up to 10, as tiles with a preview: text,
   links, pictures and files.
 - Click a tile to copy it again with its original formatting, or drag it into any app.
+- The tile with the white border is what's on your clipboard now. Remove it and the next
+  tile takes its place, so a removed item can't be pasted by accident.
 - The history lives in memory only and is cleared when Cranny quits. Passwords from
   password managers are never recorded.
 
