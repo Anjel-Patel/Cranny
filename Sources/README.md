@@ -40,7 +40,7 @@ after rebuilding.
 | `Resources/Info.plist` | Bundle metadata, version, permission prompts |
 | `Tools/` | Icon generator and `notchctl` (sends commands to a running copy) |
 | `install.sh` | The one-line installer from the main README, served straight from `main` |
-| `.github/workflows/build.yml` | CI: universal build on macOS 14 and 15 for every push and PR |
+| `.github/workflows/build.yml` | CI: universal build with Xcode 16.2 (the oldest supported) and the latest Xcode, for every push and PR |
 
 ## How it works
 
