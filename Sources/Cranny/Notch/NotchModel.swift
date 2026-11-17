@@ -166,15 +166,15 @@ final class NotchModel: ObservableObject {
             return hasPhysicalNotch
                 ? NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height, top: 6, bottom: 10)
                 : NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height, top: 3, bottom: closed.height / 2)
+        // Hovering never changes the width: the notch only grows downward.
         case .hover:
             return hasPhysicalNotch
-                ? NotchLayout(appearance: a, bodyWidth: closed.width + 14, height: closed.height + 5, top: 7, bottom: 12)
-                : NotchLayout(appearance: a, bodyWidth: closed.width + 16, height: closed.height + 8, top: 4, bottom: (closed.height + 8) / 2)
+                ? NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height + 6, top: 6, bottom: 12)
+                : NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height + 6, top: 3, bottom: (closed.height + 6) / 2)
         case .activity:
-            let bump: CGFloat = hovering ? 8 : 0
-            return NotchLayout(appearance: a, bodyWidth: activityBodyWidth + bump, height: barHeight + bump / 4, top: 6, bottom: 12)
+            return NotchLayout(appearance: a, bodyWidth: activityBodyWidth, height: barHeight + (hovering ? 3 : 0), top: 6, bottom: 12)
         case .peek:
-            return NotchLayout(appearance: a, bodyWidth: max(activityBodyWidth + 70, 330), height: barHeight + 30, top: 8, bottom: 16)
+            return NotchLayout(appearance: a, bodyWidth: activityBodyWidth, height: barHeight + 30, top: 6, bottom: 16)
         case .open:
             return NotchLayout(appearance: a, bodyWidth: openBodyWidth, height: openHeight, top: 12, bottom: 24)
         }

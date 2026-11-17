@@ -81,7 +81,8 @@ Arrange widgets on a grid, then reorder and resize them.
 
 - Album art plus an audio visualizer tinted with the album's colours, a countdown to
   your next meeting, or the number of files in the tray.
-- Hover for a Quick Peek. Click to play/pause or join a meeting.
+- Hover for a Quick Peek: the notch drops down to show the song and artist, scrolling
+  when they're too long. Click to play/pause or join a meeting.
 - Fullscreen video stays distraction-free: live activities step aside while you watch.
   You can also hide them in every fullscreen app, or always show them.
 - Two-finger swipes over the notch: down or up to open or close it, left or right to
