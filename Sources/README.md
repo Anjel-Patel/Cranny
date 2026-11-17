@@ -145,6 +145,16 @@ defaults write io.github.rdbms234.Cranny debugNotchSize none     # a Mac without
 defaults delete io.github.rdbms234.Cranny debugNotchSize         # back to normal
 ```
 
+Hovering never changes the notch's width: it only grows downward, and Quick Peek keeps the live
+activity's width. Text that doesn't fit scrolls (`PeekLine`). With Reduce Motion on, the
+scrolling and the song-name highlight stop and long lines end in "…". To see that without
+changing the system setting:
+
+```sh
+defaults write io.github.rdbms234.Cranny debugReduceMotion -bool true
+defaults delete io.github.rdbms234.Cranny debugReduceMotion
+```
+
 ## Automation and debugging
 
 URL commands (also handy from Shortcuts or Raycast):

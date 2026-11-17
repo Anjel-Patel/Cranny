@@ -242,34 +242,45 @@ struct PeekInfo: View {
     @EnvironmentObject var player: NowPlaying
     @EnvironmentObject var tray: TrayStore
     @EnvironmentObject var updates: UpdateChecker
+    @EnvironmentObject var settings: AppSettings
 
     var body: some View {
         Group {
             switch live.current {
             case .media:
-                Text(player.title.isEmpty ? "Unknown Title" : player.title).fontWeight(.semibold)
-                    + Text("  " + (player.artist.isEmpty ? "Unknown Artist" : player.artist)).foregroundStyle(.white.opacity(0.6))
+                PeekLine(
+                    primary: player.title.isEmpty ? "Unknown Title" : player.title,
+                    secondary: player.artist,
+                    highlight: highlightColor,
+                    animatesHighlight: player.isPlaying
+                )
             case .calendar:
                 if let event = live.calendarEvent {
-                    Text(event.title).fontWeight(.semibold)
-                        + Text("  " + event.start.formatted(date: .omitted, time: .shortened)).foregroundStyle(.white.opacity(0.6))
+                    PeekLine(primary: event.title, secondary: event.start.formatted(date: .omitted, time: .shortened))
                 }
             case .tray:
-                Text(tray.items.count == 1 ? "1 file in the tray" : "\(tray.items.count) files in the tray")
+                PeekLine(primary: tray.items.count == 1 ? "1 file in the tray" : "\(tray.items.count) files in the tray")
             case .updateAvailable:
-                Text("Cranny \(updates.available?.version ?? "") is available").fontWeight(.semibold)
-                    + Text("  Click to update").foregroundStyle(.white.opacity(0.6))
+                PeekLine(primary: "Update available", secondary: "Click to update")
             case nil:
                 EmptyView()
             }
         }
         .font(.system(size: 12))
-        .foregroundStyle(.white)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .padding(.horizontal, 26)
+        .frame(height: 16)
+        .padding(.horizontal, 20)
         .padding(.bottom, 4)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The album's colour, lightened so it reads as a highlight on black, when the visualizer
+    /// uses album colours; white otherwise.
+    private var highlightColor: Color {
+        guard settings.coloredSpectrograph,
+              let accent = player.accentColor.usingColorSpace(.sRGB),
+              let light = accent.blended(withFraction: 0.5, of: .white)
+        else { return .white }
+        return Color(nsColor: light)
     }
 }
 
