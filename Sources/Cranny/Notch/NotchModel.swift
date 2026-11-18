@@ -167,10 +167,10 @@ final class NotchModel: ObservableObject {
                 ? NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height, top: 6, bottom: 10)
                 : NotchLayout(appearance: a, bodyWidth: closed.width, height: closed.height, top: 3, bottom: closed.height / 2)
         // With nothing showing, the drawn notch matches the camera notch (or the handle), so
-        // hovering grows it evenly: the same amount out on the left, right and bottom.
+        // hovering grows it outward on every side.
         case .hover:
             return hasPhysicalNotch
-                ? NotchLayout(appearance: a, bodyWidth: closed.width + 14, height: closed.height + 7, top: 7, bottom: 12)
+                ? NotchLayout(appearance: a, bodyWidth: closed.width + 14, height: closed.height + 5, top: 7, bottom: 12)
                 : NotchLayout(appearance: a, bodyWidth: closed.width + 16, height: closed.height + 8, top: 4, bottom: (closed.height + 8) / 2)
         // A live activity is already wider than the notch, so hovering only lowers it, and
         // Quick Peek keeps its width.
